@@ -1049,7 +1049,8 @@ def visualize_agent(env, agent, num_episodes=3, logger=None):
 def main():
     # Create environment with continuous actions
     env = gym.make("highway-v0", config=HIGHWAY_CONFIG)
-
+    env = RandomVehicleOrderWrapper(env)
+    
     # Calculate state dimension by flattening observation space
     state_dim = np.prod(env.observation_space.shape)
     action_dim = env.action_space.shape[0]
