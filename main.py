@@ -21,6 +21,13 @@ import highway_env
 # At the top with other constants
 ARTIFACTS_DIR = os.path.join("artifacts", "highway-ppo")
 
+class RandomVehicleOrderWrapper(gym.ObservationWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+
+    def observation(self, obs):
+        np.random.shuffle(obs)
+        return obs
 
 # Then ensure_artifacts_dir
 def ensure_artifacts_dir(custom_path=None):
