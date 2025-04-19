@@ -13,11 +13,11 @@ from utils.logging_utils import ensure_artifacts_dir, setup_experiment_logger
 from utils.reproducibility import SEED
 
 
-def evaluate(env, agent, num_episodes=10, render=False):
+def evaluate(env, agent, num_episodes=10, render=False, exp_seed: int = 0):
     """Runs deterministic evaluation of the agent for a given number of episodes."""
     total_rewards = []
     for ep in range(num_episodes):
-        state, _ = env.reset(seed=SEED + 1000 + ep)
+        state, _ = env.reset(seed=exp_seed + 1000 + ep)
         flat_state = state.reshape(-1)
         done = False
         episode_reward = 0.0
@@ -31,7 +31,7 @@ def evaluate(env, agent, num_episodes=10, render=False):
     return float(np.mean(total_rewards))
 
 
-def visualize_agent(env, agent, num_episodes=3, logger=None):
+def visualize_agent(env, agent, num_episodes=3, exp_seed: int = 0, logger=None):
     """Visualizes a trained agent in the environment (render_mode='human')."""
     if logger is None:
         logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ def visualize_agent(env, agent, num_episodes=3, logger=None):
     viz_env = gym.make(env.spec.id, render_mode="human", config=env.config)
     try:
         for ep in range(num_episodes):
-            state, _ = viz_env.reset(seed=SEED + 2000 + ep)
+            state, _ = viz_env.reset(seed=exp_seed + 2000 + ep)
             flat_state = state.reshape(-1)
             done = False
             episode_reward = 0.0
@@ -69,6 +69,7 @@ def train_with_experiment_name(
     eval_interval=50,
     steps_per_update=2048,
     experiment_name="",
+    exp_seed: int = 0,
     logger=None,
 ):
     """Train loop modified to include experiment_name for artifact naming."""
@@ -106,7 +107,7 @@ def train_with_experiment_name(
 
     # Initial evaluation
     logger.info(f"{exp_prefix} Performing initial evaluation...")
-    init_reward = evaluate(env, agent, num_episodes=5)
+    init_reward = evaluate(env, agent, num_episodes=5, exp_seed=exp_seed)
     rewards.append(init_reward)
     avg_rewards.append(init_reward)
     metrics_history["eval_rewards"].append(init_reward)
@@ -122,7 +123,7 @@ def train_with_experiment_name(
 
         while steps_collected < steps_per_update and episode_num < max_episodes:
             episode_num += 1
-            state, _ = env.reset(seed=SEED + episode_num)
+            state, _ = env.reset(seed=exp_seed + episode_num)
             flat_state = state.reshape(-1)
             ep_reward = 0.0
             done = False
@@ -170,7 +171,7 @@ def train_with_experiment_name(
             # Evaluation
             if episode_num % eval_interval == 0:
                 logger.info(f"{exp_prefix} Evaluating at episode {episode_num}...")
-                eval_reward = evaluate(env, agent, num_episodes=5)
+                eval_reward = evaluate(env, agent, num_episodes=5, exp_seed=exp_seed)
                 rewards.append(eval_reward)
                 eval_episodes.append(episode_num)
                 elapsed_eval = time.time() - start_time

@@ -114,6 +114,7 @@ class ExperimentRunner:
                         eval_interval=exp.extra.get("eval_interval", 50),
                         steps_per_update=exp.hp.steps_per_update,
                         experiment_name=exp.name,
+                        exp_seed=exp.seed,
                         logger=logger,
                     )
 

@@ -61,7 +61,7 @@ class DistanceEmbedWrapper(ObservationWrapper):
             dist = np.abs(obs[:, :1])
 
         # Normalize distance
-        norm_dist = np.clip(dist / self.max_dist, 0.0, 5.0)
+        norm_dist = np.clip(dist / self.max_dist, 0.0, 1.0)
 
         # Apply sinusoidal encoding
         freqs_np = self.freqs.cpu().numpy()

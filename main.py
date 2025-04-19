@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import argparse
 import copy
 from joblib import Parallel, delayed
@@ -17,11 +16,35 @@ def define_experiments(base_seed=SEED, num_seeds=3):
     """Create a list of Experiment objects for each seed and condition."""
     experiments = []
     common_hps = CommonHP()
+    # Define base HPs for each condition
     hp_sorted = ConditionHP(**vars(common_hps))
     hp_shuffled = ConditionHP(**vars(common_hps), lr=1.5e-4, batch_size=128)
     hp_rank_pe = ConditionHP(**vars(common_hps), d_embed=8, hidden_dim=256, lr=1e-4)
     hp_dist_pe = ConditionHP(**vars(common_hps), d_embed=8, hidden_dim=256, lr=1e-4)
-    # Add more conditions as needed
+    for i in range(num_seeds):
+        seed = base_seed + i * 1000
+        experiments.append(
+            Experiment(f"sorted_seed{seed}", Condition.SORTED, hp_sorted, seed)
+        )
+        experiments.append(
+            Experiment(f"shuffled_seed{seed}", Condition.SHUFFLED, hp_shuffled, seed)
+        )
+        experiments.append(
+            Experiment(
+                f"shuffled_rankPE_d8_seed{seed}",
+                Condition.SHUFFLED_RANKPE,
+                hp_rank_pe,
+                seed,
+            )
+        )
+        experiments.append(
+            Experiment(
+                f"shuffled_distPE_d8_seed{seed}",
+                Condition.SHUFFLED_DISTPE,
+                hp_dist_pe,
+                seed,
+            )
+        )
     return experiments
 
 
@@ -48,6 +71,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
     ensure_artifacts_dir()
     master_logger = setup_master_logger()
+    # Initialize device pool for experiment execution
+    pool = DevicePool()
     ALL_EXPERIMENTS = define_experiments(SEED, args.num_seeds)
     if args.generate_slurm:
         master_logger.info(
@@ -73,16 +98,21 @@ if __name__ == "__main__":
             n_jobs = 1
         else:
             exps = ALL_EXPERIMENTS
-            pool = DevicePool()
+            # Use pre-initialized pool for device management
             n_devs = len(pool.devices)
             n_jobs = n_devs if args.n_jobs == -1 else min(args.n_jobs, n_devs)
-            master_logger.info(
-                f"Running {len(exps)} experiments with n_jobs={n_jobs}..."
-            )
+        # Instantiate shared ExperimentRunner
         runner = ExperimentRunner(HIGHWAY_CONFIG, pool)
-        results = Parallel(n_jobs=n_jobs, verbose=10)(
-            delayed(runner.launch)(exp) for exp in exps
-        )
+        master_logger.info(f"Running {len(exps)} experiments with n_jobs={n_jobs}...")
+        # Launch experiments
+        if n_jobs == 1:
+            # Serial execution with shared runner
+            results = [runner.launch(exp) for exp in exps]
+        else:
+            # Parallel execution with shared runner
+            results = Parallel(n_jobs=n_jobs, verbose=10)(
+                delayed(runner.launch)(exp) for exp in exps
+            )
         succ = sum(1 for r in results if r.get("status") == "COMPLETED")
         fail = len(results) - succ
         master_logger.info(f"Summary: {succ} succeeded, {fail} failed.")
