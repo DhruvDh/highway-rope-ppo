@@ -1,7 +1,5 @@
 import argparse
-import copy
 from joblib import Parallel, delayed
-import torch
 
 from config.base_config import HIGHWAY_CONFIG
 from utils.reproducibility import SEED
@@ -14,6 +12,7 @@ from utils.slurm import emit_slurm_array
 # Shared pool and runner for experiment execution
 pool = DevicePool()
 runner = ExperimentRunner(HIGHWAY_CONFIG, pool)
+
 
 def define_experiments(base_seed=SEED, num_seeds=3):
     """Create a list of Experiment objects for each seed and condition."""
@@ -71,14 +70,20 @@ if __name__ == "__main__":
     parser.add_argument("--slurm-partition", type=str, default="standard")
     parser.add_argument("--slurm-gpus", type=int, default=1)
     parser.add_argument("--slurm-time", type=str, default="04:00:00")
-    parser.add_argument("--exp-index", type=int, default=None,
-                        help="(internal) index in experiment list (for SLURM array)")
+    parser.add_argument(
+        "--exp-index",
+        type=int,
+        default=None,
+        help="(internal) index in experiment list (for SLURM array)",
+    )
     args = parser.parse_args()
     ensure_artifacts_dir()
     master_logger = setup_master_logger()
     ALL_EXPTS = define_experiments(SEED, args.num_seeds)
     if args.generate_slurm:
-        master_logger.info(f"Generating SLURM array script for {len(ALL_EXPTS)} experiments...")
+        master_logger.info(
+            f"Generating SLURM array script for {len(ALL_EXPTS)} experiments..."
+        )
         emit_slurm_array(
             n_experiments=len(ALL_EXPTS),
             partition=args.slurm_partition,
@@ -98,7 +103,9 @@ if __name__ == "__main__":
         elif args.run_single_experiment:
             exps = [e for e in ALL_EXPTS if e.name == args.run_single_experiment]
             if not exps:
-                master_logger.error(f"Experiment '{args.run_single_experiment}' not found.")
+                master_logger.error(
+                    f"Experiment '{args.run_single_experiment}' not found."
+                )
                 exit(1)
             n_jobs = 1
 

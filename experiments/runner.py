@@ -5,7 +5,7 @@ import time
 import traceback
 
 import gymnasium as gym
-from .config import Experiment, Condition
+from .config import Experiment
 from .wrappers import make_env
 from utils.device_pool import DevicePool
 from ppo.agent import PPOAgent

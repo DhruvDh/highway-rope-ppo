@@ -1,7 +1,7 @@
 # experiments/config.py
 from enum import Enum, auto
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 
 
 class Condition(Enum):

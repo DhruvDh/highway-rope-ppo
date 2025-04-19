@@ -3,7 +3,6 @@ import os
 import logging
 import sys
 from datetime import datetime
-from pathlib import Path
 
 # Directory for storing artifacts and logs
 ARTIFACTS_DIR = os.path.join("artifacts", "highway-ppo")

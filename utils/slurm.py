@@ -3,6 +3,7 @@ from experiments.config import Experiment
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 from jinja2.exceptions import UndefinedError
 
+
 def emit_slurm(
     exp: Experiment,
     partition="standard",
@@ -46,6 +47,7 @@ srun python {python_script} --run-single-experiment "{exp.name}"
     print(f"SLURM script generated: {script_path}")
     return script_path
 
+
 def emit_slurm_array(
     n_experiments: int,
     partition: str = "GPU",
@@ -57,8 +59,10 @@ def emit_slurm_array(
     artifacts_dir: str = "artifacts/highway-ppo",
 ):
     """Render SLURM array script from template."""
-    slurm_dir = Path("slurm_jobs"); slurm_dir.mkdir(exist_ok=True)
-    log_dir_path = Path(artifacts_dir) / "logs"; log_dir_path.mkdir(parents=True, exist_ok=True)
+    slurm_dir = Path("slurm_jobs")
+    slurm_dir.mkdir(exist_ok=True)
+    log_dir_path = Path(artifacts_dir) / "logs"
+    log_dir_path.mkdir(parents=True, exist_ok=True)
 
     template_path = slurm_dir / "experiments_array.slurm.j2"
     env = Environment(

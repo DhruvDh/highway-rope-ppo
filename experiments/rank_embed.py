@@ -1,5 +1,4 @@
 # experiments/rank_embed.py
-import gymnasium as gym
 from gymnasium import ObservationWrapper, spaces
 import numpy as np
 import torch

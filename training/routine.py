@@ -2,7 +2,6 @@
 import os
 import time
 import json
-import copy
 import numpy as np
 import matplotlib.pyplot as plt
 import gymnasium as gym
@@ -10,7 +9,6 @@ import logging
 import torch
 
 from utils.logging_utils import ensure_artifacts_dir, setup_experiment_logger
-from utils.reproducibility import SEED
 
 
 def evaluate(env, agent, num_episodes=10, render=False, exp_seed: int = 0):
