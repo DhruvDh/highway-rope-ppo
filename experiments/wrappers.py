@@ -29,12 +29,16 @@ def make_env(
     # 1. Deep copy to avoid mutating original config
     cfg = copy.deepcopy(base_cfg)
 
-    # 2. Apply environment-specific overrides
-    for key, value in env_overrides.items():
-        if isinstance(value, dict) and key in cfg and isinstance(cfg[key], dict):
-            cfg[key].update(value)
-        else:
-            cfg[key] = value
+    # Helper for recursive deep merge
+    def deep_update(orig: Dict[str, Any], updates: Dict[str, Any]):
+        for key, val in updates.items():
+            if key in orig and isinstance(orig[key], dict) and isinstance(val, dict):
+                deep_update(orig[key], val)
+            else:
+                orig[key] = val
+
+    # 2. Apply environment-specific overrides (recursive deep merge)
+    deep_update(cfg, env_overrides)
 
     # 3. Set observation order based on condition if not overridden
     obs_cfg = cfg.setdefault("observation", {})
@@ -45,9 +49,8 @@ def make_env(
             obs_cfg.setdefault("order", "shuffled")
         # other conditions can be added here
 
-    # 4. Ensure highway-env is registered
-    if "highway-v0" not in gym.envs.registry:
-        highway_env._register_highway_envs()
+    # 4. Ensure highway-env is registered (always register to support Gym/Gymnasium registry changes)
+    highway_env._register_highway_envs()
 
     # 5. Create base environment
     env = gym.make("highway-v0", config=cfg)

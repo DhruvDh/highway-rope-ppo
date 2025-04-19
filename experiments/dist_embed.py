@@ -16,6 +16,11 @@ class DistanceEmbedWrapper(ObservationWrapper):
 
         N, F = env.observation_space.shape
         self.d_embed = d_embed
+        # Ensure embedding dimension is even to match sinusoidal concatenation
+        if self.d_embed % 2 != 0:
+            raise ValueError(
+                f"DistanceEmbedWrapper requires even d_embed; got {self.d_embed}"
+            )
         self.max_dist = float(max_dist)
         self.use_euclidean = use_euclidean
 

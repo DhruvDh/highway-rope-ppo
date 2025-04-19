@@ -22,8 +22,13 @@ def setup_master_logger(log_level=logging.INFO):
     Writes to a timestamped 'master.log' in LOGS_DIR and to stdout.
     """
     os.makedirs(LOGS_DIR, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    master_log_path = os.path.join(LOGS_DIR, f"{timestamp}_master.log")
+    # Use datetime with milliseconds and include process ID to ensure unique filenames
+    now = datetime.now()
+    timestamp = now.strftime("%Y%m%d_%H%M%S_%f")[
+        :-3
+    ]  # trim microseconds to milliseconds
+    pid = os.getpid()
+    master_log_path = os.path.join(LOGS_DIR, f"{timestamp}_{pid}_master.log")
 
     logger = logging.getLogger("master_logger")
     logger.setLevel(log_level)
@@ -55,9 +60,12 @@ def setup_experiment_logger(
     Writes detailed logs to timestamped 'experiment_<id>.log' and warnings+ to stdout.
     """
     os.makedirs(LOGS_DIR, exist_ok=True)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # Use datetime with milliseconds and include process ID to ensure unique filenames
+    now = datetime.now()
+    timestamp = now.strftime("%Y%m%d_%H%M%S_%f")[:-3]
+    pid = os.getpid()
     logger_name = f"experiment_{experiment_id}"
-    exp_log_path = os.path.join(LOGS_DIR, f"{timestamp}_{logger_name}.log")
+    exp_log_path = os.path.join(LOGS_DIR, f"{timestamp}_{pid}_{logger_name}.log")
 
     logger = logging.getLogger(logger_name)
     logger.setLevel(log_level)
