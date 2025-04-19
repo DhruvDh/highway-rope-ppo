@@ -1,8 +1,6 @@
 import argparse
 import copy
 from joblib import Parallel, delayed
-import pandas as pd
-import matplotlib.pyplot as plt
 import torch
 
 from config.base_config import HIGHWAY_CONFIG
@@ -84,6 +82,7 @@ if __name__ == "__main__":
         emit_slurm_array(
             n_experiments=len(ALL_EXPTS),
             partition=args.slurm_partition,
+            gpus=args.slurm_gpus,
             cpus_per_task=1,
             mem="48G",
             time=args.slurm_time,

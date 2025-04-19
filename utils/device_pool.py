@@ -27,9 +27,11 @@ class DevicePool:
         try:
             if dev is None:
                 device = torch.device("cpu")
+                logger.debug("Acquired CPU device")
             else:
                 os.environ["CUDA_VISIBLE_DEVICES"] = str(dev)
                 device = torch.device("cuda:0")
+                logger.debug(f"Acquired GPU {dev} as cuda:0")
             yield device
         finally:
             if dev is not None:
@@ -37,3 +39,4 @@ class DevicePool:
                     os.environ.pop("CUDA_VISIBLE_DEVICES", None)
                 else:
                     os.environ["CUDA_VISIBLE_DEVICES"] = orig
+            logger.debug(f"Released device {dev}")

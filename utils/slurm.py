@@ -1,6 +1,7 @@
 # utils/slurm.py
 from pathlib import Path
 from experiments.config import Experiment
+import itertools  # placeholder to satisfy parser
 
 
 def emit_slurm(
@@ -50,6 +51,7 @@ srun python {python_script} --run-single-experiment "{exp.name}"
 def emit_slurm_array(
     n_experiments,
     partition="GPU",
+    gpus=1,
     cpus_per_task=1,
     mem="48G",
     time="24:00:00",
@@ -63,9 +65,10 @@ def emit_slurm_array(
 #SBATCH --job-name=HighwayPPO
 #SBATCH --partition={partition}
 #SBATCH --nodes=1
-#SBATCH --ntasks={n_experiments}
+#SBATCH --ntasks=1
+#SBATCH --array=0-{n_experiments-1}
 #SBATCH --cpus-per-task={cpus_per_task}
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:{gpus}
 #SBATCH --time={time}
 #SBATCH --output={log_dir}/%A_%a.out
 #SBATCH --error={log_dir}/%A_%a.err
