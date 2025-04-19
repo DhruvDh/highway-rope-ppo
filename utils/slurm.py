@@ -1,7 +1,8 @@
 # utils/slurm.py
 from pathlib import Path
 from experiments.config import Experiment
-import itertools  # placeholder to satisfy parser
+import jinja2
+from jinja2 import Environment, FileSystemLoader
 
 
 def emit_slurm(
@@ -49,43 +50,41 @@ srun python {python_script} --run-single-experiment "{exp.name}"
 
 
 def emit_slurm_array(
-    n_experiments,
-    partition="GPU",
-    gpus=1,
-    cpus_per_task=1,
-    mem="48G",
-    time="24:00:00",
-    python_script="main.py",
-    artifacts_dir="artifacts/highway-ppo",
+    n_experiments: int,
+    partition: str = "standard",
+    gpus: int = 1,
+    cpus_per_task: int = 1,
+    mem: str = "48G",
+    time: str = "24:00:00",
+    python_script: str = "main.py",
+    artifacts_dir: str = "artifacts/highway-ppo",
 ):
-    slurm_dir = Path("slurm_jobs"); slurm_dir.mkdir(exist_ok=True)
-    log_dir   = Path(artifacts_dir) / "logs"; log_dir.mkdir(parents=True, exist_ok=True)
-    script    = slurm_dir / "experiments_array.slurm"
-    content = f"""#! /bin/bash
-#SBATCH --job-name=HighwayPPO
-#SBATCH --partition={partition}
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --array=0-{n_experiments-1}
-#SBATCH --cpus-per-task={cpus_per_task}
-#SBATCH --gres=gpu:{gpus}
-#SBATCH --time={time}
-#SBATCH --output={log_dir}/%A_%a.out
-#SBATCH --error={log_dir}/%A_%a.err
-#
-module purge
-module load cuda/12.4
-module load cudnn/9.0.0-cuda12
-cd "$SLURM_SUBMIT_DIR"
-uv venv --seed
-uv sync
-# Round‑robin GPU selection (oversubscribe OK)
-NUM_GPUS=$(nvidia-smi -L | wc -l)
-if [ "$NUM_GPUS" -gt 0 ]; then
-    export CUDA_VISIBLE_DEVICES=$(( SLURM_ARRAY_TASK_ID % NUM_GPUS ))
-fi
-srun uv run {python_script} --exp-index $SLURM_ARRAY_TASK_ID
-"""
-    script.write_text(content)
-    print(f"SLURM array script generated: {script}")
-    return script
+    """Render SLURM array script from template."""
+    slurm_dir = Path("slurm_jobs")
+    slurm_dir.mkdir(exist_ok=True)
+    # Ensure log directory exists
+    log_dir_path = Path(artifacts_dir) / "logs"
+    log_dir_path.mkdir(parents=True, exist_ok=True)
+    template_path = slurm_dir / "experiments_array.slurm.j2"
+    # Setup Jinja2 environment
+    env = Environment(
+        loader=FileSystemLoader(str(template_path.parent)),
+        autoescape=False,
+        keep_trailing_newline=True,
+    )
+    tmpl = env.get_template(template_path.name)
+    # Render template
+    rendered = tmpl.render(
+        n_experiments=n_experiments,
+        partition=partition,
+        gpus=gpus,
+        cpus_per_task=cpus_per_task,
+        mem=mem,
+        time=time,
+        log_dir=str(log_dir_path),
+    )
+    # Write output script
+    out_path = slurm_dir / "experiments_array.slurm"
+    out_path.write_text(rendered)
+    print(f"SLURM array script generated at {out_path}")
+    return out_path
