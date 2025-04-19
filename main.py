@@ -84,7 +84,7 @@ if __name__ == "__main__":
             partition=args.slurm_partition,
             gpus=args.slurm_gpus,
             cpus_per_task=1,
-            mem="48G",
+            mem_per_gpu="1G",
             time=args.slurm_time,
             python_script="main.py",
         )
