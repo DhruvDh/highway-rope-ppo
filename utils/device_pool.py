@@ -12,13 +12,16 @@ logger = logging.getLogger(__name__)
 class DevicePool:
     """Round‑robin GPU picker that *allows* many experiments per GPU."""
 
-    def __init__(self):
+    def __init__(self, oversub_factor: int | None = None):
+        # Initialize available devices
         if torch.cuda.is_available():
             self.devices = list(range(torch.cuda.device_count()))
             logger.info(f"DevicePool: Found {len(self.devices)} CUDA devices.")
         else:
             self.devices = [None]
             logger.info("DevicePool: CUDA not available – using CPU.")
+        # Oversubscription factor for time-sharing devices
+        self.oversub = oversub_factor or int(os.getenv("OVERSUB", "1"))
         self._counter = itertools.count()
         self._lock = threading.Lock()
 
@@ -26,8 +29,14 @@ class DevicePool:
     def acquire(self):
         """Yield a torch.device; oversubscription is allowed."""
         with self._lock:
-            idx = next(self._counter) % len(self.devices)
-            dev = self.devices[idx]
+            # Round-robin over devices with oversubscription
+            total_slots = len(self.devices) * self.oversub
+            idx = next(self._counter) % total_slots
+            # Map slot to actual device
+            if self.devices == [None]:
+                dev = None
+            else:
+                dev = self.devices[idx % len(self.devices)]
         orig = os.environ.get("CUDA_VISIBLE_DEVICES")
         try:
             if dev is None:

@@ -1,7 +1,8 @@
 # experiments/config.py
 from enum import Enum, auto
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
+from itertools import product
 
 
 class Condition(Enum):
@@ -9,7 +10,7 @@ class Condition(Enum):
     SHUFFLED = auto()
     SHUFFLED_RANKPE = auto()
     SHUFFLED_DISTPE = auto()
-    # Add more conditions like GRAPH_ATTENTION here later
+    SHUFFLED_ROPE = auto()
 
 
 @dataclass
@@ -34,6 +35,7 @@ class ConditionHP(CommonHP):
     batch_size: int = 64
     hidden_dim: int = 128
     d_embed: Optional[int] = None  # Embedding dimension for PE variants
+    sweep: Dict[str, List[Any]] = field(default_factory=dict)
 
 
 @dataclass
@@ -50,3 +52,18 @@ class Experiment:
     extra: Dict[str, Any] = field(
         default_factory=dict
     )  # For runner-specific args or future use
+
+
+def expand_condition_hps(hp: ConditionHP) -> List[ConditionHP]:
+    """Expand a ConditionHP with a sweep dict into a list of ConditionHPs."""
+    if not hp.sweep:
+        return [hp]
+    keys, values = zip(*hp.sweep.items())
+    expanded = []
+    for combo in product(*values):
+        params = vars(hp).copy()
+        params.pop("sweep", None)
+        for key, val in zip(keys, combo):
+            params[key] = val
+        expanded.append(ConditionHP(**params))
+    return expanded

@@ -5,6 +5,7 @@ import highway_env
 from .config import Condition
 from .rank_embed import RankEmbedWrapper
 from .dist_embed import DistanceEmbedWrapper
+from .rope_embed import RotaryEmbedWrapper
 from typing import Optional, Dict, Any
 
 
@@ -45,7 +46,12 @@ def make_env(
     match exp_condition:
         case Condition.SORTED:
             obs_cfg.setdefault("order", "sorted")
-        case Condition.SHUFFLED | Condition.SHUFFLED_RANKPE | Condition.SHUFFLED_DISTPE:
+        case (
+            Condition.SHUFFLED
+            | Condition.SHUFFLED_RANKPE
+            | Condition.SHUFFLED_DISTPE
+            | Condition.SHUFFLED_ROPE
+        ):
             obs_cfg.setdefault("order", "shuffled")
         # other conditions can be added here
 
@@ -65,5 +71,9 @@ def make_env(
             if d_embed is None:
                 raise ValueError("d_embed must be specified for SHUFFLED_DISTPE")
             return DistanceEmbedWrapper(env, d_embed=d_embed)
+        case Condition.SHUFFLED_ROPE:
+            if d_embed is None:
+                raise ValueError("d_embed must be specified for SHUFFLED_ROPE")
+            return RotaryEmbedWrapper(env, d_embed=d_embed)
         case _:
             return env

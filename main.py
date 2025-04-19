@@ -4,49 +4,76 @@ from joblib import Parallel, delayed
 from config.base_config import HIGHWAY_CONFIG
 from utils.reproducibility import SEED
 from utils.logging_utils import setup_master_logger, ensure_artifacts_dir
-from experiments.config import Experiment, Condition, ConditionHP, CommonHP
+from experiments.config import (
+    Experiment,
+    Condition,
+    ConditionHP,
+    CommonHP,
+    expand_condition_hps,
+)
 from experiments.runner import ExperimentRunner
 from utils.device_pool import DevicePool
 from utils.slurm import emit_slurm_array
+from collections import defaultdict
 
 # Shared pool and runner for experiment execution
 pool = DevicePool()
 runner = ExperimentRunner(HIGHWAY_CONFIG, pool)
 
 
+def summarize(results):
+    """Print the best average reward and configuration per condition."""
+    best = defaultdict(lambda: (-1e9, ""))
+    for r in results:
+        cond = r["experiment_name"].split("_")[0]
+        avg = r["avg_rewards"][-1]
+        if avg > best[cond][0]:
+            best[cond] = (avg, r["experiment_name"])
+    print("\n=== BEST HP PER CONDITION ===")
+    for c, (score, name) in best.items():
+        print(f"{c:17} {score:7.2f}  {name}")
+
+
 def define_experiments(base_seed=SEED, num_seeds=3):
-    """Create a list of Experiment objects for each seed and condition."""
+    """Create a list of Experiment objects for each seed and hyperparameter combination."""
     experiments = []
     common_hps = CommonHP()
-    # Define base HPs for each condition
+    # Baseline conditions
     hp_sorted = ConditionHP(**vars(common_hps))
-    hp_shuffled = ConditionHP(**vars(common_hps), lr=1.5e-4, batch_size=128)
-    hp_rank_pe = ConditionHP(**vars(common_hps), d_embed=8, hidden_dim=256, lr=1e-4)
-    hp_dist_pe = ConditionHP(**vars(common_hps), d_embed=8, hidden_dim=256, lr=1e-4)
-    for i in range(num_seeds):
-        seed = base_seed + i * 1000
-        experiments.append(
-            Experiment(f"sorted_seed{seed}", Condition.SORTED, hp_sorted, seed)
-        )
-        experiments.append(
-            Experiment(f"shuffled_seed{seed}", Condition.SHUFFLED, hp_shuffled, seed)
-        )
-        experiments.append(
-            Experiment(
-                f"shuffled_rankPE_d8_seed{seed}",
-                Condition.SHUFFLED_RANKPE,
-                hp_rank_pe,
-                seed,
-            )
-        )
-        experiments.append(
-            Experiment(
-                f"shuffled_distPE_d8_seed{seed}",
-                Condition.SHUFFLED_DISTPE,
-                hp_dist_pe,
-                seed,
-            )
-        )
+    hp_shuffled = ConditionHP(**vars(common_hps))
+    # Hyperparameter sweep setup
+    sweep_dict = {
+        "lr": [1e-4, 3e-4],
+        "hidden_dim": [128, 256],
+        "clip_eps": [0.1, 0.2],
+        "entropy_coef": [0.001, 0.005],
+        "d_embed": [4, 8, 16],
+    }
+    hp_rank = ConditionHP(**vars(common_hps))
+    hp_rank.sweep = sweep_dict.copy()
+    hp_dist = ConditionHP(**vars(common_hps))
+    hp_dist.sweep = sweep_dict.copy()
+    hp_rope = ConditionHP(**vars(common_hps))
+    hp_rope.sweep = sweep_dict.copy()
+    cond_to_hp = {
+        Condition.SORTED: hp_sorted,
+        Condition.SHUFFLED: hp_shuffled,
+        Condition.SHUFFLED_RANKPE: hp_rank,
+        Condition.SHUFFLED_DISTPE: hp_dist,
+        Condition.SHUFFLED_ROPE: hp_rope,
+    }
+    for cond, hp_template in cond_to_hp.items():
+        for hp in expand_condition_hps(hp_template):
+            for i in range(num_seeds):
+                seed = base_seed + i * 1000
+                # Construct unique experiment name
+                name_parts = [cond.name.lower()]
+                for key in hp_template.sweep.keys():
+                    val = getattr(hp, key)
+                    name_parts.append(f"{key}{val}")
+                name_parts.append(f"seed{seed}")
+                exp_name = "_".join(name_parts)
+                experiments.append(Experiment(exp_name, cond, hp, seed))
     return experiments
 
 
@@ -65,6 +92,9 @@ if __name__ == "__main__":
         "--n-jobs", type=int, default=-1, help="Parallel jobs (-1 all devices)"
     )
     parser.add_argument(
+        "--n-jobs-per-task", type=int, default=None, help="Parallel jobs per SLURM task"
+    )
+    parser.add_argument(
         "--num-seeds", type=int, default=3, help="Num seeds per condition"
     )
     parser.add_argument("--slurm-partition", type=str, default="standard")
@@ -77,6 +107,9 @@ if __name__ == "__main__":
         help="(internal) index in experiment list (for SLURM array)",
     )
     args = parser.parse_args()
+    # Override n_jobs with per-task setting if provided
+    if getattr(args, "n_jobs_per_task", None) is not None:
+        args.n_jobs = args.n_jobs_per_task
     ensure_artifacts_dir()
     master_logger = setup_master_logger()
     ALL_EXPTS = define_experiments(SEED, args.num_seeds)
@@ -127,3 +160,5 @@ if __name__ == "__main__":
         succ = sum(1 for r in results if r.get("status") == "COMPLETED")
         fail = len(results) - succ
         master_logger.info(f"Summary: {succ} succeeded, {fail} failed.")
+        # Print best hyperparameter per condition
+        summarize(results)

@@ -1,26 +1,24 @@
 #!/bin/bash
-#SBATCH --job-name=HighwayPPO
-#SBATCH --partition={{ partition }}
+#SBATCH --job-name=HighwayHP
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --array=0-{{ n_experiments - 1 }}
-#SBATCH --cpus-per-task={{ cpus_per_task }}
-#SBATCH --mem-per-gpu={{ mem_per_gpu }}
-#SBATCH --gres=gpu:{{ gpus }}
-#SBATCH --time={{ time }}
-#SBATCH --output={{ log_dir }}/%A_%a.out
-#SBATCH --error={{ log_dir }}/%A_%a.err
+#SBATCH --exclusive              # no other user can land on the node
+#SBATCH --gres=gpu:4             # all four GPUs
+#SBATCH --cpus-per-task=1
+#SBATCH --ntasks-per-node=64     # 64 logical tasks (one per core)
+#SBATCH --time=48:00:00
+#SBATCH --partition=GPU
+#SBATCH --output=%x_%A_%a.out
+#SBATCH --error=%x_%A_%a.err
+#SBATCH --hint=nomultithread     # pin 1 task per physical core
 
 module purge
-module load cuda/12.4
-module load cudnn/9.0.0-cuda12
-cd "$SLURM_SUBMIT_DIR"
+module load cuda/12.4 cudnn/9.0.0-cuda12
 uv venv --seed
 uv sync
-# Round‑robin GPU selection (oversubscribe OK)
-TASK_ID=${SLURM_ARRAY_TASK_ID}
-NUM_GPUS=$(nvidia-smi -L | wc -l)
-if [ "$NUM_GPUS" -gt 0 ]; then
-    export CUDA_VISIBLE_DEVICES=$(( TASK_ID % NUM_GPUS ))
-fi
-srun uv run {{ python_script }} --exp-index $TASK_ID
+
+# Oversubscribe: 16 workers per GPU for time-sharing
+export OVERSUB=16
+export OMP_NUM_THREADS=1
+
+# Each SLURM task launches one python worker; GPUs are cycled via DevicePool
+srun --cpu-bind=cores uv run main.py --n-jobs-per-task 64 --exp-index $SLURM_PROCID
