@@ -1,6 +1,8 @@
 import argparse
 import copy
 from joblib import Parallel, delayed
+import pandas as pd
+import matplotlib.pyplot as plt
 import torch
 
 from config.base_config import HIGHWAY_CONFIG
@@ -9,8 +11,11 @@ from utils.logging_utils import setup_master_logger, ensure_artifacts_dir
 from experiments.config import Experiment, Condition, ConditionHP, CommonHP
 from experiments.runner import ExperimentRunner
 from utils.device_pool import DevicePool
-from utils.slurm import emit_slurm
+from utils.slurm import emit_slurm_array
 
+# Shared pool and runner for experiment execution
+pool = DevicePool()
+runner = ExperimentRunner(HIGHWAY_CONFIG, pool)
 
 def define_experiments(base_seed=SEED, num_seeds=3):
     """Create a list of Experiment objects for each seed and condition."""
@@ -68,50 +73,50 @@ if __name__ == "__main__":
     parser.add_argument("--slurm-partition", type=str, default="standard")
     parser.add_argument("--slurm-gpus", type=int, default=1)
     parser.add_argument("--slurm-time", type=str, default="04:00:00")
+    parser.add_argument("--exp-index", type=int, default=None,
+                        help="(internal) index in experiment list (for SLURM array)")
     args = parser.parse_args()
     ensure_artifacts_dir()
     master_logger = setup_master_logger()
-    # Initialize device pool for experiment execution
-    pool = DevicePool()
-    ALL_EXPERIMENTS = define_experiments(SEED, args.num_seeds)
+    ALL_EXPTS = define_experiments(SEED, args.num_seeds)
     if args.generate_slurm:
-        master_logger.info(
-            f"Generating SLURM scripts for {len(ALL_EXPERIMENTS)} experiments..."
+        master_logger.info(f"Generating SLURM array script for {len(ALL_EXPTS)} experiments...")
+        emit_slurm_array(
+            n_experiments=len(ALL_EXPTS),
+            partition=args.slurm_partition,
+            cpus_per_task=1,
+            mem="48G",
+            time=args.slurm_time,
+            python_script="main.py",
         )
-        for exp in ALL_EXPERIMENTS:
-            emit_slurm(
-                exp,
-                partition=args.slurm_partition,
-                gpus=args.slurm_gpus,
-                time=args.slurm_time,
-            )
-        master_logger.info("SLURM scripts generated.")
+        master_logger.info("SLURM array script generated.")
     else:
         # Select experiments
-        if args.run_single_experiment:
-            exps = [e for e in ALL_EXPERIMENTS if e.name == args.run_single_experiment]
+        if args.exp_index is not None:
+            exps = [ALL_EXPTS[args.exp_index]]
+            n_jobs = 1
+
+        elif args.run_single_experiment:
+            exps = [e for e in ALL_EXPTS if e.name == args.run_single_experiment]
             if not exps:
-                master_logger.error(
-                    f"Experiment '{args.run_single_experiment}' not found."
-                )
+                master_logger.error(f"Experiment '{args.run_single_experiment}' not found.")
                 exit(1)
             n_jobs = 1
+
         else:
-            exps = ALL_EXPERIMENTS
-            # Use pre-initialized pool for device management
-            n_devs = len(pool.devices)
+            exps = ALL_EXPTS
+            n_devs = max(len(pool.devices), 1)
             n_jobs = n_devs if args.n_jobs == -1 else min(args.n_jobs, n_devs)
-        # Instantiate shared ExperimentRunner
-        runner = ExperimentRunner(HIGHWAY_CONFIG, pool)
         master_logger.info(f"Running {len(exps)} experiments with n_jobs={n_jobs}...")
         # Launch experiments
+        launcher = runner.launch
         if n_jobs == 1:
             # Serial execution with shared runner
-            results = [runner.launch(exp) for exp in exps]
+            results = [launcher(exp) for exp in exps]
         else:
             # Parallel execution with shared runner
             results = Parallel(n_jobs=n_jobs, verbose=10)(
-                delayed(runner.launch)(exp) for exp in exps
+                delayed(launcher)(exp) for exp in exps
             )
         succ = sum(1 for r in results if r.get("status") == "COMPLETED")
         fail = len(results) - succ
