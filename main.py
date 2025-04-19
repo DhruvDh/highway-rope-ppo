@@ -43,11 +43,13 @@ def define_experiments(base_seed=SEED, num_seeds=3):
     hp_shuffled = ConditionHP(**vars(common_hps))
     # Hyperparameter sweep setup
     sweep_dict = {
-        "lr": [1e-4, 3e-4],
-        "hidden_dim": [128, 256],
-        "clip_eps": [0.1, 0.2],
-        "entropy_coef": [0.001, 0.005],
-        "d_embed": [4, 8, 16],
+        "lr": [1e-4],  # pilot winner
+        "hidden_dim": [128, 256],  # coarse MLP size check
+        "clip_eps": [0.2],  # default PPO
+        "entropy_coef": [0.001, 0.005],  # explore lower & default
+        "epochs": [6, 8],  # pilot sweet‑spot
+        "batch_size": [64],  # stable mid‑range
+        "d_embed": [4, 8, 16],  # novel axis
     }
     # Attach sweep to all conditions for full-grid runs
     hp_sorted.sweep = sweep_dict.copy()
