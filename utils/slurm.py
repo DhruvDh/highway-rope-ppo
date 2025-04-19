@@ -51,7 +51,7 @@ srun python {python_script} --run-single-experiment "{exp.name}"
 
 def emit_slurm_array(
     n_experiments: int,
-    partition: str = "standard",
+    partition: str = "GPU",
     gpus: int = 1,
     cpus_per_task: int = 1,
     mem: str = "48G",

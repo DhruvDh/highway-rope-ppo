@@ -43,7 +43,7 @@ class Experiment:
     name: str  # Unique name for logging/artifacts
     condition: Condition
     hp: ConditionHP = field(default_factory=ConditionHP)
-    seed: int  # Specific seed for this run
+    seed: int = 42  # Specific seed for this run
     max_episodes: int = 1500  # Max training episodes for this run
     target_reward: float = 20.0  # Target reward for this run
     env_config_overrides: Dict[str, Any] = field(default_factory=dict)

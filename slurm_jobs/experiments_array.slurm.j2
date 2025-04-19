@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --job-name=HighwayPPO
-#SBATCH --partition={{ partition }}
+#SBATCH --partition=GPU
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --array=0-{{ n_experiments - 1 }}
+#SBATCH --ntasks={{ n_experiments }}
 #SBATCH --cpus-per-task={{ cpus_per_task }}
+#SBATCH --mem-per-gpu=1G
 #SBATCH --gres=gpu:{{ gpus }}
 #SBATCH --time={{ time }}
 #SBATCH --output={{ log_dir }}/%A_%a.out
@@ -17,8 +17,9 @@ cd "$SLURM_SUBMIT_DIR"
 uv venv --seed
 uv sync
 # Round‑robin GPU selection (oversubscribe OK)
+TASK_ID=${SLURM_PROCID}
 NUM_GPUS=$(nvidia-smi -L | wc -l)
 if [ "$NUM_GPUS" -gt 0 ]; then
-    export CUDA_VISIBLE_DEVICES=$(( SLURM_ARRAY_TASK_ID % NUM_GPUS ))
+    export CUDA_VISIBLE_DEVICES=$(( TASK_ID % NUM_GPUS ))
 fi
-srun uv run main.py --exp-index $SLURM_ARRAY_TASK_ID
+srun uv run main.py --exp-index $TASK_ID
