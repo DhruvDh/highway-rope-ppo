@@ -23,4 +23,4 @@ export OVERSUB=16
 export OMP_NUM_THREADS=1
 
 # Each SLURM array task runs one Python worker with parallel jobs per task
-srun --cpu-bind=cores uv run {{ python_script }} --n-jobs-per-task 64 --exp-index $SLURM_ARRAY_TASK_ID
+srun --cpu-bind=cores uv run {{ python_script }} --n-jobs-per-task 64 --exp-index $SLURM_ARRAY_TASK_ID --exclusive

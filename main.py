@@ -134,7 +134,8 @@ if __name__ == "__main__":
         # Select experiments
         if args.exp_index is not None:
             exps = [ALL_EXPTS[args.exp_index]]
-            n_jobs = 1
+            # Preserve requested parallelism (e.g., --n-jobs-per-task) even for array tasks
+            n_jobs = args.n_jobs
 
         elif args.run_single_experiment:
             exps = [e for e in ALL_EXPTS if e.name == args.run_single_experiment]
