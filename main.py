@@ -21,6 +21,40 @@ import highway_env
 # At the top with other constants
 ARTIFACTS_DIR = os.path.join("artifacts", "highway-ppo")
 
+# Sinusoidal embeddings (fixed, no learnable parameters)
+class PositionalEmbeddingWrapper(gym.ObservationWrapper):
+    def __init__(self, env, embedding_dim=4):
+        super().__init__(env)
+        self.embedding_dim = embedding_dim
+        obs_shape = self.observation_space.shape
+        self.vehicles_count = obs_shape[0]
+        original_feature_dim = obs_shape[1]
+        
+        # Update observation space dimension
+        self.observation_space = gym.spaces.Box(
+            low=-np.inf, high=np.inf, shape=(self.vehicles_count, original_feature_dim + embedding_dim), dtype=np.float32
+        )
+
+    def observation(self, obs):
+        positions = np.arange(self.vehicles_count).reshape(-1, 1)  # (vehicles_count, 1)
+        embeddings = self._get_sinusoidal_embeddings(positions, self.embedding_dim)
+        return np.concatenate([obs, embeddings], axis=-1)
+
+    def _get_sinusoidal_embeddings(self, positions, d_model):
+        embeddings = np.zeros((positions.shape[0], d_model))
+        div_term = np.exp(np.arange(0, d_model, 2) * -(np.log(10000.0) / d_model))
+        embeddings[:, 0::2] = np.sin(positions * div_term)
+        embeddings[:, 1::2] = np.cos(positions * div_term)
+        return embeddings
+
+
+class RandomVehicleOrderWrapper(gym.ObservationWrapper):
+    def __init__(self, env):
+        super().__init__(env)
+
+    def observation(self, obs):
+        np.random.shuffle(obs)
+        return obs
 
 # Then ensure_artifacts_dir
 def ensure_artifacts_dir(custom_path=None):
@@ -1042,7 +1076,14 @@ def visualize_agent(env, agent, num_episodes=3, logger=None):
 def main():
     # Create environment with continuous actions
     env = gym.make("highway-v0", config=HIGHWAY_CONFIG)
+     # env = RandomVehicleOrderWrapper(env)
+     # Randomize vehicle order
+    env = RandomVehicleOrderWrapper(env)
+    
+    # Add positional embedding (sinusoidal embedding shown here)
+    env = PositionalEmbeddingWrapper(env, embedding_dim=4)
 
+    
     # Calculate state dimension by flattening observation space
     state_dim = np.prod(env.observation_space.shape)
     action_dim = env.action_space.shape[0]
