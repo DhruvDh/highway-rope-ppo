@@ -38,7 +38,7 @@ def define_experiments(base_seed=SEED, num_seeds=3):
     """Create a list of Experiment objects for each seed and hyperparameter combination."""
     experiments = []
     common_hps = CommonHP()
-    # Baseline conditions
+    # Baseline conditions (include in hyperparameter sweep as well)
     hp_sorted = ConditionHP(**vars(common_hps))
     hp_shuffled = ConditionHP(**vars(common_hps))
     # Hyperparameter sweep setup
@@ -49,6 +49,9 @@ def define_experiments(base_seed=SEED, num_seeds=3):
         "entropy_coef": [0.001, 0.005],
         "d_embed": [4, 8, 16],
     }
+    # Attach sweep to all conditions for full-grid runs
+    hp_sorted.sweep = sweep_dict.copy()
+    hp_shuffled.sweep = sweep_dict.copy()
     hp_rank = ConditionHP(**vars(common_hps))
     hp_rank.sweep = sweep_dict.copy()
     hp_dist = ConditionHP(**vars(common_hps))

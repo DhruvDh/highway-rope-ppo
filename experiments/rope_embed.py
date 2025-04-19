@@ -37,8 +37,9 @@ class RotaryEmbedWrapper(ObservationWrapper):
 
     def observation(self, obs: np.ndarray) -> np.ndarray:
         # obs shape: (N, F)
-        # Compute normalized distance of each vehicle
+        # Compute normalized distance of each vehicle and clip to [0,1]
         dist = np.linalg.norm(obs[:, :2], axis=-1) / self.max_dist  # shape (N,)
+        dist = np.clip(dist, 0.0, 1.0)
         # Compute rotary positional embeddings
         rope_embed = self._rope(dist)
         # Concatenate and return full observation

@@ -1,15 +1,17 @@
 #!/bin/bash
 #SBATCH --job-name=HighwayHP
+#SBATCH --partition={{ partition }}
 #SBATCH --nodes=1
 #SBATCH --exclusive              # no other user can land on the node
-#SBATCH --gres=gpu:4             # all four GPUs
-#SBATCH --cpus-per-task=1
-#SBATCH --ntasks-per-node=64     # 64 logical tasks (one per core)
-#SBATCH --time=48:00:00
-#SBATCH --partition=GPU
-#SBATCH --output=%x_%A_%a.out
-#SBATCH --error=%x_%A_%a.err
-#SBATCH --hint=nomultithread     # pin 1 task per physical core
+#SBATCH --gres=gpu:{{ gpus }}             # GPUs per task
+#SBATCH --cpus-per-task={{ cpus_per_task }}
+#SBATCH --ntasks=1                # one srun per array task
+#SBATCH --mem-per-gpu={{ mem_per_gpu }}
+#SBATCH --array=0-{{ n_experiments - 1 }}
+#SBATCH --time={{ time }}
+#SBATCH --output={{ log_dir }}/%x_%A_%a.out
+#SBATCH --error={{ log_dir }}/%x_%A_%a.err
+#SBATCH --hint=nomultithread     # pin 1 task per CPU core
 
 module purge
 module load cuda/12.4 cudnn/9.0.0-cuda12
@@ -20,5 +22,5 @@ uv sync
 export OVERSUB=16
 export OMP_NUM_THREADS=1
 
-# Each SLURM task launches one python worker; GPUs are cycled via DevicePool
-srun --cpu-bind=cores uv run main.py --n-jobs-per-task 64 --exp-index $SLURM_PROCID
+# Each SLURM array task runs one Python worker with parallel jobs per task
+srun --cpu-bind=cores uv run {{ python_script }} --n-jobs-per-task 64 --exp-index $SLURM_ARRAY_TASK_ID
