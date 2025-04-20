@@ -15,6 +15,8 @@ from experiments.runner import ExperimentRunner
 from utils.device_pool import DevicePool
 from utils.slurm import emit_slurm_array
 from collections import defaultdict
+import warnings
+warnings.filterwarnings("ignore", ".*Overriding environment .* already in registry.*")
 
 # Shared pool and runner for experiment execution
 pool = DevicePool()
@@ -134,18 +136,29 @@ if __name__ == "__main__":
         master_logger.info("SLURM array script generated.")
     else:
         # Select experiments
+        # Prevent using both exp-index and run-single-experiment together
+        if args.exp_index is not None and args.run_single_experiment:
+            master_logger.error("Cannot specify both --exp-index and --run-single-experiment.")
+            exit(1)
         if args.exp_index is not None:
             exps = [ALL_EXPTS[args.exp_index]]
-            # Preserve requested parallelism (e.g., --n-jobs-per-task) even for array tasks
             n_jobs = args.n_jobs
 
         elif args.run_single_experiment:
-            exps = [e for e in ALL_EXPTS if e.name == args.run_single_experiment]
-            if not exps:
-                master_logger.error(
-                    f"Experiment '{args.run_single_experiment}' not found."
-                )
-                exit(1)
+            # Support exact and prefix matching for single-experiment selection
+            exact = [e for e in ALL_EXPTS if e.name == args.run_single_experiment]
+            if exact:
+                exps = exact
+            else:
+                pref = [e for e in ALL_EXPTS if e.name.startswith(args.run_single_experiment)]
+                if len(pref) == 1:
+                    exps = pref
+                elif len(pref) > 1:
+                    master_logger.error(f"Ambiguous experiment prefix '{args.run_single_experiment}' matches: {[e.name for e in pref]}")
+                    exit(1)
+                else:
+                    master_logger.error(f"Experiment '{args.run_single_experiment}' not found.")
+                    exit(1)
             n_jobs = 1
 
         else:
