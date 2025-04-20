@@ -28,6 +28,18 @@ class DevicePool:
         self._counter = itertools.count()
         self._lock = threading.Lock()
 
+    def __getstate__(self):
+        # Remove unpicklable lock for pickling
+        state = self.__dict__.copy()
+        state.pop('_lock', None)
+        return state
+
+    def __setstate__(self, state):
+        # Restore state and recreate lock
+        self.__dict__.update(state)
+        import threading
+        self._lock = threading.Lock()
+
     @contextlib.contextmanager
     def acquire(self):
         """Yield a torch.device; oversubscription is allowed."""
