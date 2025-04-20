@@ -6,7 +6,7 @@
 #SBATCH --gres=gpu:{{ gpus }}             # GPUs per task
 #SBATCH --cpus-per-task={{ cpus_per_task }}
 #SBATCH --ntasks=1                # one srun per array task
-#SBATCH --mem-per-gpu={{ mem_per_gpu }}
+#SBATCH --mem={{ mem }}                   # Request total CPU memory for the task
 #SBATCH --array=0-{{ n_tasks - 1 }}%{{ max_concurrent_tasks | default(n_tasks) }}
 #SBATCH --time={{ time }}
 #SBATCH --output={{ log_dir }}/%x_%A_%a.out
@@ -21,5 +21,5 @@ export OVERSUB=16
 export OMP_NUM_THREADS=1
 
 # Each SLURM array task runs one Python worker with parallel jobs per task
-echo "Running SLURM Task ID: $SLURM_ARRAY_TASK_ID on Node: $SLURMD_NODENAME with $SLURM_CPUS_PER_TASK CPUs and $SLURM_GPUS_ON_NODE GPUs"
+echo "Running SLURM Task ID: $SLURM_ARRAY_TASK_ID on Node: $SLURMD_NODENAME with $SLURM_CPUS_PER_TASK CPUs and $SLURM_GPUS_ON_NODE GPUs and {{ mem }} RAM requested"
 srun --cpu-bind=cores uv run {{ python_script }} --array-task-id $SLURM_ARRAY_TASK_ID --num-cpus-per-task $SLURM_CPUS_PER_TASK

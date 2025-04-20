@@ -15,6 +15,7 @@ echo "Total experiments: $TOTAL_EXPTS, Array tasks: $NUM_ARRAY_TASKS"
 uv run main.py --generate-slurm \
     --slurm-gpus $GPUS_PER_NODE \
     --slurm-cpus $NUM_WORKERS_PER_NODE \
+    --slurm-mem 128G \
     --slurm-time 48:00:00 \
     --slurm-num-tasks $NUM_ARRAY_TASKS \
     --slurm-max-concurrent $MAX_CONCURRENT_TASKS

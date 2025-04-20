@@ -127,7 +127,10 @@ if __name__ == "__main__":
         help="Max concurrent SLURM tasks",
     )
     parser.add_argument(
-        "--slurm-mem-per-gpu", type=str, default="2G", help="Memory per GPU"
+        "--slurm-mem",
+        type=str,
+        default="128G",
+        help="Total CPU memory request per SLURM task (e.g., 64G, 128G)",
     )
     parser.add_argument(
         "--slurm-time", type=str, default="04:00:00", help="Walltime for SLURM jobs"
@@ -173,7 +176,7 @@ if __name__ == "__main__":
             partition=args.slurm_partition,
             gpus=args.slurm_gpus,
             cpus_per_task=args.slurm_cpus,
-            mem_per_gpu=args.slurm_mem_per_gpu,
+            mem=args.slurm_mem,
             time=args.slurm_time,
             python_script="main.py",
             max_concurrent_tasks=args.slurm_max_concurrent,
