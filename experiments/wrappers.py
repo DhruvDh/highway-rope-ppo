@@ -10,6 +10,7 @@ from typing import Optional, Dict, Any
 
 _HIGHWAY_ENVS_REGISTERED = False
 
+
 def make_env(
     exp_condition: Condition,
     base_cfg: Dict[str, Any],

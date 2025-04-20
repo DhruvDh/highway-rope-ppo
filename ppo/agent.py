@@ -63,8 +63,7 @@ class ActorCritic(nn.Module):
             z = dist.sample()
             action = torch.tanh(z)
             # Change of variables for tanh
-            log_prob = dist.log_prob(z) - torch.log(1 - action.pow(2) + 1e-6)
-            log_prob = log_prob.sum(dim=-1)
+            log_prob = (dist.log_prob(z) - torch.log1p(-action.pow(2) + 1e-6)).sum(dim=-1)
         action_np = action.detach().cpu().numpy()
         pre_tanh_np = z.detach().cpu().numpy()
         log_prob_val = log_prob.item() if log_prob is not None else None
@@ -76,7 +75,7 @@ class ActorCritic(nn.Module):
         dist = Normal(action_means, action_stds)
         log_probs = dist.log_prob(pre_tanh_actions)
         tanh_actions = torch.tanh(pre_tanh_actions)
-        log_probs = log_probs - torch.log(1 - tanh_actions.pow(2) + 1e-6)
+        log_probs = log_probs - torch.log1p(-tanh_actions.pow(2) + 1e-6)
         log_probs = log_probs.sum(dim=-1)
         entropy = dist.entropy().sum(dim=-1)
         return log_probs, state_values, entropy

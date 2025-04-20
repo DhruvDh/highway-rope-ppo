@@ -1,5 +1,6 @@
 # analysis.py
-import re, glob
+import re
+import glob
 import pandas as pd
 import numpy as np
 

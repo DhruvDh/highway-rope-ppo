@@ -16,9 +16,10 @@ from utils.device_pool import DevicePool
 from utils.slurm import emit_slurm_array
 from collections import defaultdict
 import warnings
-warnings.filterwarnings("ignore", ".*Overriding environment .* already in registry.*")
 import os
 import math
+
+warnings.filterwarnings("ignore", ".*Overriding environment .* already in registry.*")
 
 # Shared pool and runner for experiment execution
 pool = DevicePool()
@@ -100,17 +101,54 @@ if __name__ == "__main__":
     parser.add_argument(
         "--n-jobs", type=int, default=-1, help="Parallel jobs (-1 all devices)"
     )
-    parser.add_argument("--num-seeds", type=int, default=3, help="Num seeds per condition")
-    parser.add_argument("--slurm-partition", type=str, default="GPU", help="SLURM partition name")
+    parser.add_argument(
+        "--num-seeds", type=int, default=3, help="Num seeds per condition"
+    )
+    parser.add_argument(
+        "--slurm-partition", type=str, default="GPU", help="SLURM partition name"
+    )
     parser.add_argument("--slurm-gpus", type=int, default=1, help="GPUs per node/task")
-    parser.add_argument("--slurm-cpus", type=int, default=8, help="CPUs per node/task for parallel workers")
-    parser.add_argument("--slurm-num-tasks", type=int, default=None, help="Number of SLURM array tasks (batches)")
-    parser.add_argument("--slurm-max-concurrent", type=int, default=None, help="Max concurrent SLURM tasks")
-    parser.add_argument("--slurm-mem-per-gpu", type=str, default="2G", help="Memory per GPU")
-    parser.add_argument("--slurm-time", type=str, default="04:00:00", help="Walltime for SLURM jobs")
-    parser.add_argument("--array-task-id", type=int, default=None, help="ID of the current SLURM array task (batch)")
-    parser.add_argument("--get-total-experiments", action="store_true", help="Print total number of experiments and exit")
-    parser.add_argument("--num-cpus-per-task", type=int, default=None, help="CPUs allocated to this task")
+    parser.add_argument(
+        "--slurm-cpus",
+        type=int,
+        default=8,
+        help="CPUs per node/task for parallel workers",
+    )
+    parser.add_argument(
+        "--slurm-num-tasks",
+        type=int,
+        default=None,
+        help="Number of SLURM array tasks (batches)",
+    )
+    parser.add_argument(
+        "--slurm-max-concurrent",
+        type=int,
+        default=None,
+        help="Max concurrent SLURM tasks",
+    )
+    parser.add_argument(
+        "--slurm-mem-per-gpu", type=str, default="2G", help="Memory per GPU"
+    )
+    parser.add_argument(
+        "--slurm-time", type=str, default="04:00:00", help="Walltime for SLURM jobs"
+    )
+    parser.add_argument(
+        "--array-task-id",
+        type=int,
+        default=None,
+        help="ID of the current SLURM array task (batch)",
+    )
+    parser.add_argument(
+        "--get-total-experiments",
+        action="store_true",
+        help="Print total number of experiments and exit",
+    )
+    parser.add_argument(
+        "--num-cpus-per-task",
+        type=int,
+        default=None,
+        help="CPUs allocated to this task",
+    )
     args = parser.parse_args()
     # Allow SLURM-provided CPU allocation to override job count
     ensure_artifacts_dir()
@@ -127,7 +165,9 @@ if __name__ == "__main__":
         else:
             exp_per_task = args.slurm_cpus
             num_tasks = math.ceil(total_experiments / exp_per_task)
-            master_logger.info(f"Calculated num_tasks={num_tasks} based on {total_experiments} experiments and CPUs per task {args.slurm_cpus}.")
+            master_logger.info(
+                f"Calculated num_tasks={num_tasks} based on {total_experiments} experiments and CPUs per task {args.slurm_cpus}."
+            )
         emit_slurm_array(
             n_tasks=num_tasks,
             partition=args.slurm_partition,
@@ -144,25 +184,37 @@ if __name__ == "__main__":
         # Determine jobs and experiment subset
         if args.array_task_id is not None:
             # SLURM array execution
-            n_jobs = args.num_cpus_per_task or int(os.getenv('SLURM_CPUS_PER_TASK', 1))
+            n_jobs = args.num_cpus_per_task or int(os.getenv("SLURM_CPUS_PER_TASK", 1))
             master_logger.info(f"SLURM run detected. Using n_jobs = {n_jobs}.")
-            num_tasks = args.slurm_num_tasks or int(os.getenv('SLURM_ARRAY_TASK_COUNT', 1))
+            num_tasks = args.slurm_num_tasks or int(
+                os.getenv("SLURM_ARRAY_TASK_COUNT", 1)
+            )
             exps_per_task = math.ceil(len(ALL_EXPTS) / num_tasks)
             start = args.array_task_id * exps_per_task
             end = min(start + exps_per_task, len(ALL_EXPTS))
             if start >= len(ALL_EXPTS):
-                master_logger.warning(f"Task ID {args.array_task_id} has no experiments to run.")
+                master_logger.warning(
+                    f"Task ID {args.array_task_id} has no experiments to run."
+                )
                 exps = []
             else:
                 exps = ALL_EXPTS[start:end]
-                master_logger.info(f"SLURM Task {args.array_task_id}/{num_tasks-1}: Running experiments {start} to {end-1}.")
+                master_logger.info(
+                    f"SLURM Task {args.array_task_id}/{num_tasks - 1}: Running experiments {start} to {end - 1}."
+                )
         elif args.run_single_experiment:
             # Local single experiment
             matches = [e for e in ALL_EXPTS if e.name == args.run_single_experiment]
             if not matches:
-                matches = [e for e in ALL_EXPTS if e.name.startswith(args.run_single_experiment)]
+                matches = [
+                    e
+                    for e in ALL_EXPTS
+                    if e.name.startswith(args.run_single_experiment)
+                ]
             if len(matches) != 1:
-                master_logger.error(f"Experiment '{args.run_single_experiment}' selection ambiguous or not found.")
+                master_logger.error(
+                    f"Experiment '{args.run_single_experiment}' selection ambiguous or not found."
+                )
                 exit(1)
             exps = matches
             n_jobs = 1
