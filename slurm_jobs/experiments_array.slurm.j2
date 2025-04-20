@@ -16,11 +16,11 @@
 module purge
 module load cuda/12.4 cudnn/9.0.0-cuda12
 uv venv --seed
-uv sync
+uv sync --extra cu124
 
 # Oversubscribe: 16 workers per GPU for time-sharing
 export OVERSUB=16
 export OMP_NUM_THREADS=1
 
 # Each SLURM array task runs one Python worker with parallel jobs per task
-srun --cpu-bind=cores uv run {{ python_script }} --n-jobs-per-task 64 --exp-index $SLURM_ARRAY_TASK_ID --exclusive
+srun --cpu-bind=cores uv run {{ python_script }} --n-jobs-per-task {{ cpus_per_task }} --exp-index $SLURM_ARRAY_TASK_ID --exclusive
