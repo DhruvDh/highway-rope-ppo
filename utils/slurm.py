@@ -6,7 +6,7 @@ from jinja2.exceptions import UndefinedError
 
 def emit_slurm(
     exp: Experiment,
-    partition="standard",
+    partition="GPU",
     gpus=1,
     cpus_per_task=4,
     mem="16G",

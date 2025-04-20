@@ -104,7 +104,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num-seeds", type=int, default=3, help="Num seeds per condition"
     )
-    parser.add_argument("--slurm-partition", type=str, default="standard")
+    parser.add_argument("--slurm-partition", type=str, default="GPU")
     parser.add_argument("--slurm-gpus", type=int, default=1)
     parser.add_argument("--slurm-time", type=str, default="04:00:00")
     parser.add_argument(
