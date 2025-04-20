@@ -1,16 +1,16 @@
 #!/bin/bash
 #SBATCH --job-name=HighwayHP
-#SBATCH --partition={{ partition }}
+#SBATCH --partition=GPU
 #SBATCH --nodes=1
 #SBATCH --exclusive              # no other user can land on the node
-#SBATCH --gres=gpu:{{ gpus }}             # GPUs per task
-#SBATCH --cpus-per-task={{ cpus_per_task }}
+#SBATCH --gres=gpu:4             # GPUs per task
+#SBATCH --cpus-per-task=32
 #SBATCH --ntasks=1                # one srun per array task
-#SBATCH --mem-per-gpu={{ mem_per_gpu }}
-#SBATCH --array=0-{{ n_tasks - 1 }}%{{ max_concurrent_tasks | default(n_tasks) }}
-#SBATCH --time={{ time }}
-#SBATCH --output={{ log_dir }}/%x_%A_%a.out
-#SBATCH --error={{ log_dir }}/%x_%A_%a.err
+#SBATCH --mem-per-gpu=2G
+#SBATCH --array=0-0%1
+#SBATCH --time=48:00:00
+#SBATCH --output=artifacts/highway-ppo/logs/%x_%A_%a.out
+#SBATCH --error=artifacts/highway-ppo/logs/%x_%A_%a.err
 #SBATCH --hint=nomultithread     # pin 1 task per CPU core
 
 module purge
@@ -22,4 +22,4 @@ export OMP_NUM_THREADS=1
 
 # Each SLURM array task runs one Python worker with parallel jobs per task
 echo "Running SLURM Task ID: $SLURM_ARRAY_TASK_ID on Node: $SLURMD_NODENAME with $SLURM_CPUS_PER_TASK CPUs and $SLURM_GPUS_ON_NODE GPUs"
-srun --cpu-bind=cores uv run {{ python_script }} --array-task-id $SLURM_ARRAY_TASK_ID --num-cpus-per-task $SLURM_CPUS_PER_TASK
+srun --cpu-bind=cores uv run main.py --array-task-id $SLURM_ARRAY_TASK_ID --num-cpus-per-task $SLURM_CPUS_PER_TASK

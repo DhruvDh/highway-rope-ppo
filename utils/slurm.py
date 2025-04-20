@@ -49,7 +49,7 @@ srun python {python_script} --run-single-experiment "{exp.name}"
 
 
 def emit_slurm_array(
-    n_experiments: int,
+    n_tasks: int,
     partition: str = "GPU",
     gpus: int = 1,
     cpus_per_task: int = 1,
@@ -57,6 +57,7 @@ def emit_slurm_array(
     time: str = "24:00:00",
     python_script: str = "main.py",
     artifacts_dir: str = "artifacts/highway-ppo",
+    max_concurrent_tasks: int | None = None,
 ):
     """Render SLURM array script from template."""
     slurm_dir = Path("slurm_jobs")
@@ -77,7 +78,7 @@ def emit_slurm_array(
 
     try:
         rendered = tmpl.render(
-            n_experiments=n_experiments,
+            n_tasks=n_tasks,
             partition=partition,
             gpus=gpus,
             cpus_per_task=cpus_per_task,
@@ -85,6 +86,7 @@ def emit_slurm_array(
             time=time,
             python_script=python_script,
             log_dir=str(log_dir_path),
+            max_concurrent_tasks=max_concurrent_tasks,
         )
     except UndefinedError as e:
         raise RuntimeError(f"Error rendering SLURM template: {e}")

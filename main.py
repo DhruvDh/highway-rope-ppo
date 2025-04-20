@@ -17,6 +17,8 @@ from utils.slurm import emit_slurm_array
 from collections import defaultdict
 import warnings
 warnings.filterwarnings("ignore", ".*Overriding environment .* already in registry.*")
+import os
+import math
 
 # Shared pool and runner for experiment execution
 pool = DevicePool()
@@ -98,74 +100,76 @@ if __name__ == "__main__":
     parser.add_argument(
         "--n-jobs", type=int, default=-1, help="Parallel jobs (-1 all devices)"
     )
-    parser.add_argument(
-        "--n-jobs-per-task", type=int, default=None, help="Parallel jobs per SLURM task"
-    )
-    parser.add_argument(
-        "--num-seeds", type=int, default=3, help="Num seeds per condition"
-    )
-    parser.add_argument("--slurm-partition", type=str, default="GPU")
-    parser.add_argument("--slurm-gpus", type=int, default=1)
-    parser.add_argument("--slurm-time", type=str, default="04:00:00")
-    parser.add_argument(
-        "--exp-index",
-        type=int,
-        default=None,
-        help="(internal) index in experiment list (for SLURM array)",
-    )
+    parser.add_argument("--num-seeds", type=int, default=3, help="Num seeds per condition")
+    parser.add_argument("--slurm-partition", type=str, default="GPU", help="SLURM partition name")
+    parser.add_argument("--slurm-gpus", type=int, default=1, help="GPUs per node/task")
+    parser.add_argument("--slurm-cpus", type=int, default=8, help="CPUs per node/task for parallel workers")
+    parser.add_argument("--slurm-num-tasks", type=int, default=None, help="Number of SLURM array tasks (batches)")
+    parser.add_argument("--slurm-max-concurrent", type=int, default=None, help="Max concurrent SLURM tasks")
+    parser.add_argument("--slurm-mem-per-gpu", type=str, default="2G", help="Memory per GPU")
+    parser.add_argument("--slurm-time", type=str, default="04:00:00", help="Walltime for SLURM jobs")
+    parser.add_argument("--array-task-id", type=int, default=None, help="ID of the current SLURM array task (batch)")
+    parser.add_argument("--num-cpus-per-task", type=int, default=None, help="CPUs allocated to this task")
     args = parser.parse_args()
-    # Override n_jobs with per-task setting if provided
-    if getattr(args, "n_jobs_per_task", None) is not None:
-        args.n_jobs = args.n_jobs_per_task
+    # Allow SLURM-provided CPU allocation to override job count
     ensure_artifacts_dir()
     master_logger = setup_master_logger()
     ALL_EXPTS = define_experiments(SEED, args.num_seeds)
     if args.generate_slurm:
-        master_logger.info(
-            f"Generating SLURM array script for {len(ALL_EXPTS)} experiments..."
-        )
+        master_logger.info("Generating SLURM array script...")
+        total_experiments = len(ALL_EXPTS)
+        if args.slurm_num_tasks:
+            num_tasks = args.slurm_num_tasks
+        else:
+            exp_per_task = args.slurm_cpus
+            num_tasks = math.ceil(total_experiments / exp_per_task)
+            master_logger.info(f"Calculated num_tasks={num_tasks} based on {total_experiments} experiments and CPUs per task {args.slurm_cpus}.")
         emit_slurm_array(
-            n_experiments=len(ALL_EXPTS),
+            n_tasks=num_tasks,
             partition=args.slurm_partition,
             gpus=args.slurm_gpus,
-            cpus_per_task=1,
-            mem_per_gpu="1G",
+            cpus_per_task=args.slurm_cpus,
+            mem_per_gpu=args.slurm_mem_per_gpu,
             time=args.slurm_time,
             python_script="main.py",
+            max_concurrent_tasks=args.slurm_max_concurrent,
         )
-        master_logger.info("SLURM array script generated.")
+        master_logger.info(f"SLURM array script generated for {num_tasks} tasks.")
+        exit(0)
     else:
-        # Select experiments
-        # Prevent using both exp-index and run-single-experiment together
-        if args.exp_index is not None and args.run_single_experiment:
-            master_logger.error("Cannot specify both --exp-index and --run-single-experiment.")
-            exit(1)
-        if args.exp_index is not None:
-            exps = [ALL_EXPTS[args.exp_index]]
-            n_jobs = args.n_jobs
-
-        elif args.run_single_experiment:
-            # Support exact and prefix matching for single-experiment selection
-            exact = [e for e in ALL_EXPTS if e.name == args.run_single_experiment]
-            if exact:
-                exps = exact
+        # Determine jobs and experiment subset
+        if args.array_task_id is not None:
+            # SLURM array execution
+            n_jobs = args.num_cpus_per_task or int(os.getenv('SLURM_CPUS_PER_TASK', 1))
+            master_logger.info(f"SLURM run detected. Using n_jobs = {n_jobs}.")
+            num_tasks = args.slurm_num_tasks or int(os.getenv('SLURM_ARRAY_TASK_COUNT', 1))
+            exps_per_task = math.ceil(len(ALL_EXPTS) / num_tasks)
+            start = args.array_task_id * exps_per_task
+            end = min(start + exps_per_task, len(ALL_EXPTS))
+            if start >= len(ALL_EXPTS):
+                master_logger.warning(f"Task ID {args.array_task_id} has no experiments to run.")
+                exps = []
             else:
-                pref = [e for e in ALL_EXPTS if e.name.startswith(args.run_single_experiment)]
-                if len(pref) == 1:
-                    exps = pref
-                elif len(pref) > 1:
-                    master_logger.error(f"Ambiguous experiment prefix '{args.run_single_experiment}' matches: {[e.name for e in pref]}")
-                    exit(1)
-                else:
-                    master_logger.error(f"Experiment '{args.run_single_experiment}' not found.")
-                    exit(1)
+                exps = ALL_EXPTS[start:end]
+                master_logger.info(f"SLURM Task {args.array_task_id}/{num_tasks-1}: Running experiments {start} to {end-1}.")
+        elif args.run_single_experiment:
+            # Local single experiment
+            matches = [e for e in ALL_EXPTS if e.name == args.run_single_experiment]
+            if not matches:
+                matches = [e for e in ALL_EXPTS if e.name.startswith(args.run_single_experiment)]
+            if len(matches) != 1:
+                master_logger.error(f"Experiment '{args.run_single_experiment}' selection ambiguous or not found.")
+                exit(1)
+            exps = matches
             n_jobs = 1
-
+            master_logger.info(f"Running single experiment: {exps[0].name}")
         else:
+            # Local full run
             exps = ALL_EXPTS
             n_devs = max(len(pool.devices), 1)
-            n_jobs = n_devs if args.n_jobs == -1 else min(args.n_jobs, n_devs)
-        master_logger.info(f"Running {len(exps)} experiments with n_jobs={n_jobs}...")
+            n_jobs = n_devs
+            master_logger.info(f"Local run. Using n_jobs = {n_jobs}.")
+        master_logger.info(f"Launching {len(exps)} experiments with n_jobs={n_jobs}...")
         # Launch experiments
         launcher = runner.launch
         if n_jobs == 1:
