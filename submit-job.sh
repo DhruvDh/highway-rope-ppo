@@ -8,7 +8,7 @@ GPUS_PER_NODE=4
 # Maximum SLURM array tasks running concurrently
 MAX_CONCURRENT_TASKS=10
 # Compute total experiments and number of batches/tasks
-TOTAL_EXPTS=$(uv run main.py --get-total-experiments)
+TOTAL_EXPTS=$(uv run main.py --get-total-experiments | tail -n1)
 NUM_ARRAY_TASKS=$(( (TOTAL_EXPTS + NUM_WORKERS_PER_NODE - 1) / NUM_WORKERS_PER_NODE ))
 echo "Total experiments: $TOTAL_EXPTS, Array tasks: $NUM_ARRAY_TASKS"
 

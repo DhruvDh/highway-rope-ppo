@@ -4,10 +4,10 @@
 #SBATCH --nodes=1
 #SBATCH --exclusive              # no other user can land on the node
 #SBATCH --gres=gpu:4             # GPUs per task
-#SBATCH --cpus-per-task=32
+#SBATCH --cpus-per-task=64
 #SBATCH --ntasks=1                # one srun per array task
 #SBATCH --mem-per-gpu=2G
-#SBATCH --array=0-0%1
+#SBATCH --array=0-4%10
 #SBATCH --time=48:00:00
 #SBATCH --output=artifacts/highway-ppo/logs/%x_%A_%a.out
 #SBATCH --error=artifacts/highway-ppo/logs/%x_%A_%a.err
