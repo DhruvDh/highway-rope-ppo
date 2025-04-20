@@ -1,5 +1,6 @@
 from gymnasium import ObservationWrapper, spaces
 import numpy as np
+from typing import Optional
 import torch
 
 
@@ -36,6 +37,8 @@ class DistanceEmbedWrapper(ObservationWrapper):
             -torch.arange(0, d_embed, 2, dtype=torch.float32)
             * (np.log(10000.0) / d_embed)
         )
+        # Cache numpy version of frequencies to avoid repeated .cpu().numpy()
+        self._freqs_np: np.ndarray = self.freqs.cpu().numpy()
 
         # Define new observation space
         new_shape = (N, F + d_embed)
@@ -53,7 +56,9 @@ class DistanceEmbedWrapper(ObservationWrapper):
 
     def to(self, device):
         """Moves frequency tensor to the specified device."""
+        # Move tensor and update cached numpy version
         self.freqs = self.freqs.to(device)
+        self._freqs_np = self.freqs.cpu().numpy()
         self._device = device
         return self
 
@@ -68,8 +73,7 @@ class DistanceEmbedWrapper(ObservationWrapper):
         norm_dist = np.clip(dist / self.max_dist, 0.0, 1.0)
 
         # Apply sinusoidal encoding
-        freqs_np = self.freqs.cpu().numpy()
-        angles = norm_dist * freqs_np
+        angles = norm_dist * self._freqs_np
         embed = np.concatenate([np.sin(angles), np.cos(angles)], axis=-1)
 
         obs_float = obs.astype(np.float32)

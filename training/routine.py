@@ -213,11 +213,12 @@ def train_with_experiment_name(
                     )
 
         # Bootstrapping final value
-        final_value = 0.0
+        final_value: float = 0.0
         if not done:
             with torch.no_grad():
-                _, _, final_value = agent.actor_critic.forward(flat_state)
-                final_value = float(final_value.cpu().item())
+                # Get final state value tensor
+                _, _, value_tensor = agent.actor_critic.forward(flat_state)
+                final_value = float(value_tensor.cpu().item())
 
         logger.debug(f"{exp_prefix} Updating policy after {steps_collected} steps...")
         update_metrics = agent.update(last_value=final_value)
@@ -264,7 +265,7 @@ def train_with_experiment_name(
     plot_path = os.path.join(
         artifacts_dir, f"ppo_highway_rewards_{experiment_name}.png"
     )
-    plt.savefig(plot_path)
+    plt.savefig(plot_path, bbox_inches="tight")
     plt.close()
     logger.info(f"{exp_prefix} Training plot saved to {plot_path}")
 

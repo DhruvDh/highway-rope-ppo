@@ -5,6 +5,7 @@ import sys
 # --- Configuration ---
 TARGET_DIRECTORY = "."  # Current directory
 OUTPUT_FILENAME = "combined_validated_data.csv"  # Name for the combined output file
+TEMP_OUTPUT_PATH = os.path.join("/tmp", OUTPUT_FILENAME)  # Write to temp file first
 
 
 # --- Helper Function to Read Header ---
@@ -148,11 +149,11 @@ total_data_rows_written = 0
 
 try:
     # Open the output file ONCE for writing
-    with open(OUTPUT_FILENAME, "w", newline="", encoding="utf-8") as outfile:
+    with open(TEMP_OUTPUT_PATH, "w", newline="", encoding="utf-8") as outfile:
         csv_writer = csv.writer(outfile)
 
         # Write the validated reference header
-        print(f"Writing header to '{OUTPUT_FILENAME}'...")
+        print(f"Writing header to '{TEMP_OUTPUT_PATH}'...")
         csv_writer.writerow(reference_header)
 
         # Loop through files again to append data rows
@@ -204,7 +205,7 @@ try:
                 files_skipped_in_data_phase += 1
 
 except IOError as e:
-    print(f"\nCRITICAL Error: Could not write to output file '{OUTPUT_FILENAME}': {e}")
+    print(f"\nCRITICAL Error: Could not write to output file '{TEMP_OUTPUT_PATH}': {e}")
     sys.exit(1)
 except Exception as e:
     print(
@@ -219,9 +220,13 @@ print(f"Validated header using: '{first_valid_file}'")
 print(
     f"Successfully processed {files_processed_count} file(s) during data appending phase."
 )
-print(f"Combined data written to '{OUTPUT_FILENAME}'.")
+print(f"Combined data written to '{TEMP_OUTPUT_PATH}'.")
 print(f"Total data rows written (excluding header): {total_data_rows_written}")
 if files_skipped_in_data_phase > 0:
     print(
         f"Warning: {files_skipped_in_data_phase} file(s) were skipped during data appending due to errors (check logs above)."
     )
+
+# Move temp file to final output location to avoid self-ingestion
+os.replace(TEMP_OUTPUT_PATH, os.path.join(TARGET_DIRECTORY, OUTPUT_FILENAME))
+print(f"Moved combined file to '{os.path.abspath(os.path.join(TARGET_DIRECTORY, OUTPUT_FILENAME))}'")

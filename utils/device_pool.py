@@ -5,6 +5,7 @@ import contextlib
 import os
 import threading
 import logging
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +15,8 @@ class DevicePool:
 
     def __init__(self, oversub_factor: int | None = None):
         # Initialize available devices
+        # Devices list may contain GPU indices or None when using CPU
+        self.devices: list[Optional[int]]
         if torch.cuda.is_available():
             self.devices = list(range(torch.cuda.device_count()))
             logger.info(f"DevicePool: Found {len(self.devices)} CUDA devices.")
@@ -33,7 +36,7 @@ class DevicePool:
             total_slots = len(self.devices) * self.oversub
             idx = next(self._counter) % total_slots
             # Map slot to actual device
-            if self.devices == [None]:
+            if len(self.devices) == 1 and self.devices[0] is None:
                 dev = None
             else:
                 dev = self.devices[idx % len(self.devices)]

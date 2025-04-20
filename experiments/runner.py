@@ -3,6 +3,8 @@ import numpy as np
 import torch
 import time
 import traceback
+import logging
+from typing import Any, Dict
 
 import gymnasium as gym
 from .config import Experiment
@@ -43,7 +45,8 @@ class ExperimentRunner:
 
     def launch(self, exp: Experiment):
         """Sets up and runs a single experiment."""
-        run_results = {"experiment_name": exp.name, "status": "FAILED"}
+        # Record results with flexible types for mypy
+        run_results: Dict[str, Any] = {"experiment_name": exp.name, "status": "FAILED"}
         start_time = time.time()
         logger = None
         try:
@@ -147,4 +150,6 @@ class ExperimentRunner:
             logger.info(
                 f"[{exp.name}] Run finished. Status: {run_results['status']}. Duration: {run_results['duration_seconds']:.2f}s"
             )
+        # Shutdown logging to close file handlers
+        logging.shutdown()
         return run_results

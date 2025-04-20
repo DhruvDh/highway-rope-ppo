@@ -6,6 +6,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torch.distributions import Normal
 import logging
+from typing import Any, Optional
 
 
 class ActorCritic(nn.Module):
@@ -85,14 +86,15 @@ class PPOMemory:
     def __init__(
         self, batch_size: int = 64, device: torch.device = torch.device("cpu")
     ):
-        self.states = []
-        self.actions = []
-        self.pre_tanh_actions = []
-        self.rewards = []
-        self.next_states = []
-        self.log_probs = []
-        self.dones = []
-        self.values = []
+        # Buffers for experience; annotate types for mypy
+        self.states: list[Any] = []
+        self.actions: list[Any] = []
+        self.pre_tanh_actions: list[Any] = []
+        self.rewards: list[float] = []
+        self.next_states: list[Any] = []
+        self.log_probs: list[float] = []
+        self.dones: list[bool] = []
+        self.values: list[float] = []
         self.batch_size = batch_size
         self.device = device
 
@@ -165,7 +167,7 @@ class PPOAgent:
         epochs: int = 6,
         batch_size: int = 64,
         hidden_dim: int = 128,
-        logger: logging.Logger = None,
+        logger: Optional[logging.Logger] = None,
         device: torch.device = torch.device("cpu"),
     ):
         self.device = device
@@ -199,13 +201,14 @@ class PPOAgent:
         # Normalize advantages
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
         batches = self.memory.get_batches()
-        # Tracking metrics
-        total_policy_loss = total_value_loss = total_entropy = total_loss = 0
-        clip_frac = approx_kl = explained_var = 0
+        # Initialize accumulators as floats for mypy compatibility
+        total_policy_loss = total_value_loss = total_entropy = total_loss = 0.0
+        clip_frac = approx_kl = explained_var = 0.0
         for epoch in range(self.epochs):
-            epoch_policy_loss = epoch_value_loss = epoch_entropy = epoch_total_loss = 0
-            epoch_clip_count = 0
-            epoch_kl_sum = 0
+            # Initialize epoch-level accumulators as floats
+            epoch_policy_loss = epoch_value_loss = epoch_entropy = epoch_total_loss = 0.0
+            epoch_clip_count = 0.0
+            epoch_kl_sum = 0.0
             for batch_idxs in batches:
                 b_states = states[batch_idxs]
                 b_actions = actions[batch_idxs]
@@ -266,8 +269,11 @@ class PPOAgent:
             y_pred = torch.FloatTensor(self.memory.values).to(self.device)
             y_true = returns[:-1] if len(returns) > len(y_pred) else returns
             var_y = torch.var(y_true)
-            explained_var = 1 - torch.var(y_true - y_pred) / var_y if var_y > 0 else 0
-            explained_var = explained_var.item()
+            # Compute explained variance safely as float
+            if var_y.item() > 0:
+                explained_var = (1 - torch.var(y_true - y_pred) / var_y).item()
+            else:
+                explained_var = 0.0
         # Normalize metrics
         avg_policy_loss = total_policy_loss / self.epochs
         avg_value_loss = total_value_loss / self.epochs

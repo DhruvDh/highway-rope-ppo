@@ -3,7 +3,7 @@
 source cluster-setup.sh
 cd "$SLURM_SUBMIT_DIR"
 
-NUM_WORKERS_PER_NODE=64
+NUM_WORKERS_PER_NODE=32
 GPUS_PER_NODE=4
 # Maximum SLURM array tasks running concurrently
 MAX_CONCURRENT_TASKS=10
