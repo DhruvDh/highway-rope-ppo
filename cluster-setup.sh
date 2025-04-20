@@ -10,7 +10,7 @@ module load cudnn/9.0.0-cuda12
 uv venv --seed
 
 # 3. Sync project dependencies
-uv sync
+uv sync --extra cu124
 
 # 4. Activate venv
 #    uv run will implicitly activate, but exporting ensures subshells see it
