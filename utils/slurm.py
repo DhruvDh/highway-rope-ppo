@@ -53,7 +53,7 @@ def emit_slurm_array(
     partition: str = "GPU",
     gpus: int = 1,
     cpus_per_task: int = 1,
-    mem_per_gpu: str = "1G",
+    mem_per_gpu: str = "8G",
     time: str = "24:00:00",
     python_script: str = "main.py",
     artifacts_dir: str = "artifacts/highway-ppo",
