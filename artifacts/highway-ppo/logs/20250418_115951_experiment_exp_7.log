@@ -1,0 +1,104 @@
+2025-04-18 11:59:51,411 | INFO | Experiment logger initialized for experiment_exp_7. Log file: artifacts\highway-ppo\logs\20250418_115951_experiment_exp_7.log
+2025-04-18 11:59:51,427 | INFO | 
+=== Starting Experiment 8/162: feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64 ===
+
+2025-04-18 11:59:51,427 | INFO | State dimension: 90, Action dimension: 2
+2025-04-18 11:59:51,427 | INFO | Using features: ['x', 'y', 'vx', 'vy', 'cos_h', 'sin_h']
+2025-04-18 11:59:53,538 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Starting training for experiment: feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64
+2025-04-18 11:59:53,539 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Device: GPU: NVIDIA GeForce RTX 4070 Laptop GPU
+2025-04-18 11:59:53,539 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Max episodes: 1500, Target reward: 20.0
+2025-04-18 11:59:53,539 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Environment: highway-v0
+2025-04-18 11:59:53,539 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Steps per update: 2048, PPO epochs: 4
+2025-04-18 11:59:53,539 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Learning rate: 0.0001, Gamma: 0.99, Lambda: 0.95
+2025-04-18 11:59:53,539 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Clip epsilon: 0.2, Value coef: 0.5, Entropy coef: 0.005
+2025-04-18 11:59:53,540 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Performing initial evaluation...
+2025-04-18 12:00:49,267 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] initial_eval reward=10.37
+2025-04-18 12:02:56,382 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=10 reward=8.76 avg_reward=9.28 steps=2000 episode_steps=200 time=182.84s
+2025-04-18 12:03:00,681 | INFO | update_complete loss=0.8058 policy_loss=-0.0008 value_loss=1.6415 entropy=2.8382 clip_frac=0.001 kl=0.00049 explained_var=-0.001
+2025-04-18 12:04:40,455 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=20 reward=1.36 avg_reward=6.09 steps=3675 episode_steps=200 time=286.92s
+2025-04-18 12:05:07,481 | INFO | update_complete loss=0.6221 policy_loss=-0.0009 value_loss=1.2744 entropy=2.8353 clip_frac=0.001 kl=0.00046 explained_var=0.032
+2025-04-18 12:05:58,379 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=30 reward=16.77 avg_reward=9.73 steps=4943 episode_steps=200 time=364.84s
+2025-04-18 12:07:12,044 | INFO | update_complete loss=0.4623 policy_loss=-0.0031 value_loss=0.9593 entropy=2.8352 clip_frac=0.020 kl=0.00180 explained_var=0.231
+2025-04-18 12:07:25,005 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=40 reward=7.34 avg_reward=3.90 steps=6344 episode_steps=200 time=451.47s
+2025-04-18 12:09:23,113 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=50 reward=8.53 avg_reward=7.05 steps=8158 episode_steps=200 time=569.57s
+2025-04-18 12:09:23,113 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Evaluating at episode 50...
+2025-04-18 12:09:59,300 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] eval episode=50 reward=5.47 avg_reward=7.92 time=605.76s
+2025-04-18 12:09:59,308 | INFO | model_saved path=artifacts\highway-ppo\ppo_highway_best_feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64.pth
+2025-04-18 12:09:59,308 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] New best model saved with average reward: 7.92
+2025-04-18 12:10:02,127 | INFO | update_complete loss=0.4053 policy_loss=-0.0033 value_loss=0.8456 entropy=2.8367 clip_frac=0.022 kl=0.00225 explained_var=0.365
+2025-04-18 12:11:35,691 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=60 reward=2.41 avg_reward=4.93 steps=9297 episode_steps=200 time=702.15s
+2025-04-18 12:12:35,082 | INFO | update_complete loss=0.3074 policy_loss=-0.0012 value_loss=0.6456 entropy=2.8349 clip_frac=0.012 kl=0.00149 explained_var=0.431
+2025-04-18 12:13:23,485 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=70 reward=4.69 avg_reward=5.23 steps=11049 episode_steps=9 time=809.95s
+2025-04-18 12:14:42,346 | INFO | update_complete loss=0.5382 policy_loss=-0.0021 value_loss=1.1089 entropy=2.8358 clip_frac=0.018 kl=0.00230 explained_var=0.327
+2025-04-18 12:14:50,211 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=80 reward=1.70 avg_reward=7.57 steps=12417 episode_steps=20 time=896.67s
+2025-04-18 12:16:15,308 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=90 reward=2.89 avg_reward=7.41 steps=13747 episode_steps=200 time=981.77s
+2025-04-18 12:16:57,825 | INFO | update_complete loss=0.4576 policy_loss=-0.0047 value_loss=0.9530 entropy=2.8346 clip_frac=0.039 kl=0.00336 explained_var=0.371
+2025-04-18 12:18:07,301 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=100 reward=5.64 avg_reward=9.83 steps=15324 episode_steps=17 time=1093.76s
+2025-04-18 12:18:07,301 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Evaluating at episode 100...
+2025-04-18 12:18:26,660 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] eval episode=100 reward=13.86 avg_reward=9.90 time=1113.12s
+2025-04-18 12:18:26,666 | INFO | model_saved path=artifacts\highway-ppo\ppo_highway_best_feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64.pth
+2025-04-18 12:18:26,666 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] New best model saved with average reward: 9.90
+2025-04-18 12:19:42,378 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=110 reward=2.79 avg_reward=8.21 steps=16384 episode_steps=82 time=1188.84s
+2025-04-18 12:19:43,414 | INFO | update_complete loss=1.1335 policy_loss=-0.0044 value_loss=2.3041 entropy=2.8301 clip_frac=0.036 kl=0.00317 explained_var=0.194
+2025-04-18 12:20:40,899 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=120 reward=11.91 avg_reward=6.75 steps=17184 episode_steps=200 time=1247.36s
+2025-04-18 12:21:23,481 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=130 reward=5.52 avg_reward=6.27 steps=17805 episode_steps=18 time=1289.94s
+2025-04-18 12:22:08,016 | INFO | update_complete loss=1.0700 policy_loss=-0.0042 value_loss=2.1767 entropy=2.8295 clip_frac=0.044 kl=0.00428 explained_var=0.149
+2025-04-18 12:22:09,038 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=140 reward=3.83 avg_reward=5.61 steps=18448 episode_steps=16 time=1335.50s
+2025-04-18 12:23:01,115 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=150 reward=2.69 avg_reward=8.55 steps=19225 episode_steps=7 time=1387.58s
+2025-04-18 12:23:01,115 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Evaluating at episode 150...
+2025-04-18 12:23:07,605 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] eval episode=150 reward=14.52 avg_reward=11.06 time=1394.07s
+2025-04-18 12:23:07,612 | INFO | model_saved path=artifacts\highway-ppo\ppo_highway_best_feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64.pth
+2025-04-18 12:23:07,612 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] New best model saved with average reward: 11.06
+2025-04-18 12:23:55,725 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=160 reward=7.40 avg_reward=7.43 steps=19865 episode_steps=64 time=1442.19s
+2025-04-18 12:24:40,302 | INFO | update_complete loss=1.4321 policy_loss=-0.0029 value_loss=2.8983 entropy=2.8292 clip_frac=0.032 kl=0.00344 explained_var=0.262
+2025-04-18 12:24:44,035 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=170 reward=8.92 avg_reward=8.99 steps=20529 episode_steps=49 time=1490.50s
+2025-04-18 12:25:18,716 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=180 reward=9.04 avg_reward=7.95 steps=21014 episode_steps=20 time=1525.18s
+2025-04-18 12:25:56,638 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=190 reward=11.19 avg_reward=5.84 steps=21596 episode_steps=176 time=1563.10s
+2025-04-18 12:26:57,940 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=200 reward=23.47 avg_reward=13.46 steps=22473 episode_steps=200 time=1624.40s
+2025-04-18 12:26:57,941 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Evaluating at episode 200...
+2025-04-18 12:27:04,560 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] eval episode=200 reward=14.63 avg_reward=11.77 time=1631.02s
+2025-04-18 12:27:04,568 | INFO | model_saved path=artifacts\highway-ppo\ppo_highway_best_feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64.pth
+2025-04-18 12:27:04,568 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] New best model saved with average reward: 11.77
+2025-04-18 12:27:09,657 | INFO | update_complete loss=1.6286 policy_loss=-0.0063 value_loss=3.2980 entropy=2.8275 clip_frac=0.050 kl=0.00471 explained_var=0.263
+2025-04-18 12:27:30,167 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=210 reward=8.77 avg_reward=8.49 steps=22788 episode_steps=18 time=1656.63s
+2025-04-18 12:28:16,081 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=220 reward=3.43 avg_reward=11.55 steps=23396 episode_steps=34 time=1702.54s
+2025-04-18 12:28:51,791 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=230 reward=10.64 avg_reward=9.92 steps=23886 episode_steps=29 time=1738.25s
+2025-04-18 12:29:11,012 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=240 reward=0.98 avg_reward=8.82 steps=24154 episode_steps=15 time=1757.47s
+2025-04-18 12:29:39,968 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=250 reward=11.18 avg_reward=7.65 steps=24576 episode_steps=17 time=1786.43s
+2025-04-18 12:29:39,968 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Evaluating at episode 250...
+2025-04-18 12:29:45,846 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] eval episode=250 reward=14.10 avg_reward=12.16 time=1792.31s
+2025-04-18 12:29:45,849 | INFO | model_saved path=artifacts\highway-ppo\ppo_highway_best_feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64.pth
+2025-04-18 12:29:45,850 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] New best model saved with average reward: 12.16
+2025-04-18 12:29:46,831 | INFO | update_complete loss=3.1670 policy_loss=-0.0045 value_loss=6.3714 entropy=2.8264 clip_frac=0.025 kl=0.00304 explained_var=0.157
+2025-04-18 12:30:21,623 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=260 reward=6.19 avg_reward=14.14 steps=25099 episode_steps=24 time=1828.08s
+2025-04-18 12:31:17,636 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=270 reward=10.26 avg_reward=19.24 steps=25902 episode_steps=64 time=1884.10s
+2025-04-18 12:32:02,026 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=280 reward=1.44 avg_reward=13.21 steps=26504 episode_steps=24 time=1928.49s
+2025-04-18 12:32:11,182 | INFO | update_complete loss=5.1956 policy_loss=-0.0049 value_loss=10.4292 entropy=2.8256 clip_frac=0.039 kl=0.00383 explained_var=0.247
+2025-04-18 12:32:34,266 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=290 reward=6.11 avg_reward=13.49 steps=26952 episode_steps=12 time=1960.73s
+2025-04-18 12:33:19,588 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=300 reward=7.67 avg_reward=9.86 steps=27595 episode_steps=13 time=2006.05s
+2025-04-18 12:33:19,588 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Evaluating at episode 300...
+2025-04-18 12:33:42,105 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] eval episode=300 reward=41.73 avg_reward=16.38 time=2028.57s
+2025-04-18 12:33:42,111 | INFO | model_saved path=artifacts\highway-ppo\ppo_highway_best_feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64.pth
+2025-04-18 12:33:42,111 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] New best model saved with average reward: 16.38
+2025-04-18 12:34:10,681 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=310 reward=35.00 avg_reward=10.39 steps=28014 episode_steps=200 time=2057.14s
+2025-04-18 12:34:49,092 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=320 reward=4.74 avg_reward=13.78 steps=28584 episode_steps=38 time=2095.55s
+2025-04-18 12:34:56,221 | INFO | update_complete loss=5.0576 policy_loss=-0.0016 value_loss=10.1467 entropy=2.8256 clip_frac=0.010 kl=0.00207 explained_var=0.367
+2025-04-18 12:35:04,790 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=330 reward=5.32 avg_reward=8.01 steps=28795 episode_steps=8 time=2111.25s
+2025-04-18 12:35:13,666 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=340 reward=5.29 avg_reward=6.34 steps=28918 episode_steps=21 time=2120.13s
+2025-04-18 12:35:44,529 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=350 reward=10.94 avg_reward=8.89 steps=29339 episode_steps=200 time=2150.99s
+2025-04-18 12:35:44,529 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Evaluating at episode 350...
+2025-04-18 12:36:42,299 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] eval episode=350 reward=68.99 avg_reward=22.96 time=2208.76s
+2025-04-18 12:36:42,306 | INFO | model_saved path=artifacts\highway-ppo\ppo_highway_best_feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64.pth
+2025-04-18 12:36:42,306 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] New best model saved with average reward: 22.96
+2025-04-18 12:37:29,449 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=360 reward=6.80 avg_reward=13.13 steps=30037 episode_steps=13 time=2255.91s
+2025-04-18 12:38:06,926 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=370 reward=7.38 avg_reward=11.05 steps=30608 episode_steps=14 time=2293.39s
+2025-04-18 12:38:15,253 | INFO | update_complete loss=3.7462 policy_loss=-0.0011 value_loss=7.5229 entropy=2.8256 clip_frac=0.012 kl=0.00173 explained_var=0.444
+2025-04-18 12:38:32,150 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=380 reward=4.60 avg_reward=9.19 steps=30966 episode_steps=10 time=2318.61s
+2025-04-18 12:39:37,636 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=390 reward=5.02 avg_reward=28.61 steps=31885 episode_steps=7 time=2384.10s
+2025-04-18 12:40:08,441 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=400 reward=14.58 avg_reward=15.92 steps=32315 episode_steps=23 time=2414.90s
+2025-04-18 12:40:08,441 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] Evaluating at episode 400...
+2025-04-18 12:40:24,445 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] eval episode=400 reward=32.50 avg_reward=24.02 time=2430.91s
+2025-04-18 12:40:24,448 | INFO | model_saved path=artifacts\highway-ppo\ppo_highway_best_feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64.pth
+2025-04-18 12:40:24,448 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] New best model saved with average reward: 24.02
+2025-04-18 12:40:56,347 | INFO | update_complete loss=8.6453 policy_loss=-0.0037 value_loss=17.3263 entropy=2.8253 clip_frac=0.041 kl=0.00379 explained_var=0.239
+2025-04-18 12:40:57,227 | INFO | [feat=x,y,vx,vy,cos_h,sin_h_epochs=4_lr=0.0001_hidden_dim=64_batch_size=64] episode=410 reward=8.32 avg_reward=9.57 steps=32780 episode_steps=12 time=2463.69s

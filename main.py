@@ -17,6 +17,8 @@ from datetime import datetime
 from pathlib import Path
 from joblib import Parallel, delayed
 import highway_env
+from positional_embeddings import add_positional_embeddings
+
 
 # At the top with other constants
 ARTIFACTS_DIR = os.path.join("artifacts", "highway-ppo")
@@ -734,7 +736,8 @@ def train(
             episode_num += 1
             state, _ = env.reset(seed=SEED + episode_num)
 
-            # Flatten observation from (N, F) to (N*F,)
+            # Apply positional embedding before flattening
+            state = add_positional_embeddings(state, method="rank")  # or "sinusoidal"
             state = state.reshape(-1)
 
             episode_reward = 0
@@ -750,7 +753,9 @@ def train(
                 done = terminated or truncated
 
                 # Flatten next_state from (N, F) to (N*F,)
+                next_state = add_positional_embeddings(next_state, method="rank")  # or "sinusoidal"
                 next_state = next_state.reshape(-1)
+
 
                 # Store in memory (using normalized state and both action forms)
                 agent.memory.store(
@@ -1045,6 +1050,14 @@ def main():
 
     # Calculate state dimension by flattening observation space
     state_dim = np.prod(env.observation_space.shape)
+    
+    # Original obs shape: (num_vehicles, 4) →adding 1 more feature
+    vehicles = env.unwrapped.config["observation"]["vehicles_count"]
+    original_features = 4  # x, y, vx, vy
+    embedding_dim = 1      #adding 1 rank or distance embedding
+
+    new_features = original_features + embedding_dim
+    state_dim = vehicles * new_features
     action_dim = env.action_space.shape[0]
 
     # Setup master logger
@@ -1139,7 +1152,7 @@ def main():
                 ],
                 "batch_size": [32, 64, 128],
             },
-            n_jobs=42,  # Adjust based on your CPU cores and memory
+            n_jobs=8,  # Adjust based on your CPU cores and memory
             logger=master_logger,
         )
 
