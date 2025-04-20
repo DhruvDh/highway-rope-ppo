@@ -109,12 +109,16 @@ if __name__ == "__main__":
     parser.add_argument("--slurm-mem-per-gpu", type=str, default="2G", help="Memory per GPU")
     parser.add_argument("--slurm-time", type=str, default="04:00:00", help="Walltime for SLURM jobs")
     parser.add_argument("--array-task-id", type=int, default=None, help="ID of the current SLURM array task (batch)")
+    parser.add_argument("--get-total-experiments", action="store_true", help="Print total number of experiments and exit")
     parser.add_argument("--num-cpus-per-task", type=int, default=None, help="CPUs allocated to this task")
     args = parser.parse_args()
     # Allow SLURM-provided CPU allocation to override job count
     ensure_artifacts_dir()
     master_logger = setup_master_logger()
     ALL_EXPTS = define_experiments(SEED, args.num_seeds)
+    if args.get_total_experiments:
+        print(len(ALL_EXPTS))
+        exit(0)
     if args.generate_slurm:
         master_logger.info("Generating SLURM array script...")
         total_experiments = len(ALL_EXPTS)
