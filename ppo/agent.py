@@ -65,10 +65,10 @@ class ActorCritic(nn.Module):
             # Change of variables for tanh
             log_prob = dist.log_prob(z) - torch.log(1 - action.pow(2) + 1e-6)
             log_prob = log_prob.sum(dim=-1)
-        action_np = action.cpu().numpy()
-        pre_tanh_np = z.cpu().numpy()
+        action_np = action.detach().cpu().numpy()
+        pre_tanh_np = z.detach().cpu().numpy()
         log_prob_val = log_prob.item() if log_prob is not None else None
-        value_val = value.cpu().numpy()[0]
+        value_val = value.detach().cpu().numpy()[0]
         return action_np, pre_tanh_np, log_prob_val, value_val
 
     def evaluate(self, states, actions, pre_tanh_actions):

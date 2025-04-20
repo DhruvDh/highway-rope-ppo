@@ -8,6 +8,7 @@ from .dist_embed import DistanceEmbedWrapper
 from .rope_embed import RotaryEmbedWrapper
 from typing import Optional, Dict, Any
 
+_HIGHWAY_ENVS_REGISTERED = False
 
 def make_env(
     exp_condition: Condition,
@@ -55,8 +56,11 @@ def make_env(
             obs_cfg.setdefault("order", "shuffled")
         # other conditions can be added here
 
-    # 4. Ensure highway-env is registered (always register to support Gym/Gymnasium registry changes)
-    highway_env._register_highway_envs()
+    # 4. Ensure highway-env is registered (only once per session)
+    global _HIGHWAY_ENVS_REGISTERED
+    if not _HIGHWAY_ENVS_REGISTERED:
+        highway_env._register_highway_envs()
+        _HIGHWAY_ENVS_REGISTERED = True
 
     # 5. Create base environment
     env = gym.make("highway-v0", config=cfg)
