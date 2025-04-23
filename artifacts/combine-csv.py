@@ -229,4 +229,6 @@ if files_skipped_in_data_phase > 0:
 
 # Move temp file to final output location to avoid self-ingestion
 os.replace(TEMP_OUTPUT_PATH, os.path.join(TARGET_DIRECTORY, OUTPUT_FILENAME))
-print(f"Moved combined file to '{os.path.abspath(os.path.join(TARGET_DIRECTORY, OUTPUT_FILENAME))}'")
+print(
+    f"Moved combined file to '{os.path.abspath(os.path.join(TARGET_DIRECTORY, OUTPUT_FILENAME))}'"
+)

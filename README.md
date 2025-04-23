@@ -2,6 +2,10 @@
 
 A GPU‑parallel PPO runner for highway‑env experiments with positional embedding sweeps.
 
+## TODO
+
+- [ ] Bigger set size: raise vehicles_count / vehicles_count observed to 30. Larger permutations are harder to ignore.
+
 ## Quickstart
 
 1. Create and activate your Python venv (via `uv venv --seed && uv sync`).
@@ -31,22 +35,22 @@ uv run main.py --generate-slurm \
 
 This command writes the `slurm_jobs/experiments_array.slurm` template, filling in:
 
-* `--gres=gpu:{{ gpus }}` with the `--slurm-gpus` value.
-* `--cpus-per-task={{ cpus_per_task }}` from the CLI (default 1).
-* `--mem-per-gpu={{ mem_per_gpu }}` from the CLI (default "1G").
-* `--array=0-{{ n_experiments - 1 }}` to cover all experiments.
+- `--gres=gpu:{{ gpus }}` with the `--slurm-gpus` value.
+- `--cpus-per-task={{ cpus_per_task }}` from the CLI (default 1).
+- `--mem-per-gpu={{ mem_per_gpu }}` from the CLI (default "1G").
+- `--array=0-{{ n_experiments - 1 }}` to cover all experiments.
 
 Review the generated script before submitting with `sbatch slurm_jobs/experiments_array.slurm` to ensure it matches your cluster policies and resource limits.
 
 ## Flags
 
-* `--n-jobs-per-task`: Number of parallel PPO workers each SLURM task should spawn (overrides `--n-jobs`).
-* `OVERSUB` (env var): How many logical workers to time‑share per GPU (default `1`; set to `16` in the SLURM template).
+- `--n-jobs-per-task`: Number of parallel PPO workers each SLURM task should spawn (overrides `--n-jobs`).
+- `OVERSUB` (env var): How many logical workers to time‑share per GPU (default `1`; set to `16` in the SLURM template).
 
 ## Notes
 
-* The SLURM array runs one Python process per task (array index = experiment index), each of which will internally spawn multiple workers using Joblib and `DevicePool`.
-* The `OVERSUB` environment variable controls the oversubscription factor for GPU time‑sharing in `DevicePool`.
+- The SLURM array runs one Python process per task (array index = experiment index), each of which will internally spawn multiple workers using Joblib and `DevicePool`.
+- The `OVERSUB` environment variable controls the oversubscription factor for GPU time‑sharing in `DevicePool`.
 
 ## Midterm Pilot Analysis
 
@@ -54,21 +58,21 @@ Review the generated script before submitting with `sbatch slurm_jobs/experiment
 
 To refine the hyperparameter sweep for the final positional embedding experiments, the midterm dataset (162 runs) was re-analyzed, focusing only on runs matching the fixed hyperparameters intended for the final sweep:
 
-* `features = 'x,y,vx,vy'`
-* `learning_rate = 3e-4`
-* `epochs = 8`
+- `features = 'x,y,vx,vy'`
+- `learning_rate = 3e-4`
+- `epochs = 8`
 
 *(Note: `clip_eps=0.2` and `entropy_coef=0.005` from the pilot analysis could not be used for filtering as they were not encoded in the experiment names in the dataset).*
 
 This subset contained 9 runs. Key insights from this filtered analysis:
 
-* **Baseline Confirmation:** This configuration represents a strong starting point, with an average reward of **120.00 ± 14.10** across these 9 runs.
-* **Hidden Dimension:** Performance increased with `hidden_dim` within this subset (`64`: 112.04, `128`: 122.08, `256`: **125.88**). This supports exploring dimensions ≥ 256 in the final sweep (`[256, 384, 512]`).
-* **Batch Size:** Results were mixed compared to the full dataset analysis:
-  * `batch_size=64` achieved the highest average reward (**125.15**) but had very high variance (± 25.93).
-  * `batch_size=32` was more stable (120.10 ± 5.93).
-  * The single best run in this subset used `hidden_dim=256` and `batch_size=64`, reaching a reward of **142.38**.
-  * This justifies including both `[32, 64]` in the final sweep to investigate this trade-off further.
+- **Baseline Confirmation:** This configuration represents a strong starting point, with an average reward of **120.00 ± 14.10** across these 9 runs.
+- **Hidden Dimension:** Performance increased with `hidden_dim` within this subset (`64`: 112.04, `128`: 122.08, `256`: **125.88**). This supports exploring dimensions ≥ 256 in the final sweep (`[256, 384, 512]`).
+- **Batch Size:** Results were mixed compared to the full dataset analysis:
+  - `batch_size=64` achieved the highest average reward (**125.15**) but had very high variance (± 25.93).
+  - `batch_size=32` was more stable (120.10 ± 5.93).
+  - The single best run in this subset used `hidden_dim=256` and `batch_size=64`, reaching a reward of **142.38**.
+  - This justifies including both `[32, 64]` in the final sweep to investigate this trade-off further.
 
 These findings confirm the selection of fixed parameters and validate the chosen sweep ranges for `hidden_dim` and `batch_size` in the `final-run` experiments.
 
@@ -180,17 +184,17 @@ The final set of experiments focuses on evaluating the impact of different posit
 
 Based on the midterm pilot analysis, the following hyperparameters are **fixed** across all final runs:
 
-* **Features:** `["x", "y", "vx", "vy"]` (relative position & velocity)
-* **Learning Rate:** `3e-4`
-* **PPO Clip Epsilon:** `0.2`
-* **Entropy Coefficient:** `0.005`
-* **Epochs per Update:** `8`
+- **Features:** `["x", "y", "vx", "vy"]` (relative position & velocity)
+- **Learning Rate:** `3e-4`
+- **PPO Clip Epsilon:** `0.2`
+- **Entropy Coefficient:** `0.005`
+- **Epochs per Update:** `8`
 
 The following hyperparameters are **swept** in the final run:
 
-* **Hidden Dimension:** `[256, 384, 512]` (Network size)
-* **Batch Size:** `[32, 64]` (Mini-batch size for PPO updates)
-* **Embedding Dimension (`d_embed`):** `[4, 8, 16]` (Size of the positional embedding vector, applicable only to PE conditions)
+- **Hidden Dimension:** `[256, 384, 512]` (Network size)
+- **Batch Size:** `[32, 64]` (Mini-batch size for PPO updates)
+- **Embedding Dimension (`d_embed`):** `[4, 8, 16]` (Size of the positional embedding vector, applicable only to PE conditions)
 
 This results in the following `sweep_dict` used in `main.py`:
 
@@ -209,8 +213,41 @@ sweep_dict = {
 
 Each combination of swept hyperparameters is run for multiple random seeds across the following **Experimental Conditions** (`experiments/config.py:Condition`):
 
-* `SORTED`: Baseline, observations sorted by distance, no PE.
-* `SHUFFLED`: Baseline, observations shuffled randomly, no PE.
-* `SHUFFLED_RANKPE`: Shuffled observations + learnable Rank Positional Embedding.
-* `SHUFFLED_DISTPE`: Shuffled observations + fixed Sinusoidal Distance Positional Embedding.
-* `SHUFFLED_ROPE`: Shuffled observations + fixed Rotary Positional Embedding.
+- `SORTED`: Baseline, observations sorted by distance, no PE.
+- `SHUFFLED`: Baseline, observations shuffled randomly, no PE.
+- `SHUFFLED_RANKPE`: Shuffled observations + learnable Rank Positional Embedding.
+- `SHUFFLED_DISTPE`: Shuffled observations + fixed Sinusoidal Distance Positional Embedding.
+- `SHUFFLED_ROPE`: Shuffled observations + fixed Rotary Positional Embedding.
+
+## Results (15 observed vehicles)
+
+![Final reward boxplot](./figures/box_final_reward.png)
+![Episodes‑to‑120 boxplot](./figures/box_ep_to_thr.png)
+![Hidden‑dim × PE heat‑map](./figures/heat_hidden_dim_vs_pe.png)
+![Δ‑recovery vs ordering penalty](./figures/delta_recovery.png)
+![AULC boxplot](./figures/box_auc.png)
+
+### Key observations
+
+- **Ordering penalty is small.**  
+  Training with completely shuffled observations (no positional embedding) scored only ~2 points below the distance‑sorted baseline and reached the 120‑reward mark in roughly the same number of episodes.
+
+- **Positional embeddings did not help — and sometimes hurt.**  
+  *RankPE* and *RoPE* slowed learning by ≈100 episodes and finished at the same median reward as the plain shuffled baseline.  
+  *DistPE* was consistently the worst performer in both speed and final score.
+
+- **Model capacity dominated.**  
+  A hidden dimension of **256** delivered the best final reward across *all* conditions. Increasing to 384 or 512 hid‑dim reduced performance unless RankPE was used – and even then, the gain was marginal.
+
+- **Take‑away:** for \(N = 15\) vehicles our vanilla MLP appears robust to permutation noise; explicit positional signals are unnecessary.
+
+- **No recovery of the (tiny) ordering gap.**  
+  The dashed line in *delta_recovery.png* is the ~0 pt “gap” between sorted and shuffled.  All positional‑embedding bars are at or **below** zero – they add nothing, occasionally subtract.
+
+- **Cumulative reward ranking mirrors speed ranking.**  
+  The AULC plot shows `sorted ≈ shuffled ≫ shuffled_rankpe > shuffled_rope ≫ shuffled_distpe`.  In other words, embeddings that slowed learning also harvested less total reward.
+
+### Next step
+
+The TODO list (above) already calls for doubling the observed set size.  
+We will rerun the exact sweep with **30 vehicles** in the observation tensor to test whether larger permutations finally expose a benefit for learned or sinusoidal positional cues.

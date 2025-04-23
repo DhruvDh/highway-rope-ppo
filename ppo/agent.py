@@ -64,7 +64,9 @@ class ActorCritic(nn.Module):
             z = dist.sample()
             action = torch.tanh(z)
             # Change of variables for tanh
-            log_prob = (dist.log_prob(z) - torch.log1p(-action.pow(2) + 1e-6)).sum(dim=-1)
+            log_prob = (dist.log_prob(z) - torch.log1p(-action.pow(2) + 1e-6)).sum(
+                dim=-1
+            )
         action_np = action.detach().cpu().numpy()
         pre_tanh_np = z.detach().cpu().numpy()
         log_prob_val = log_prob.item() if log_prob is not None else None
@@ -206,7 +208,9 @@ class PPOAgent:
         clip_frac = approx_kl = explained_var = 0.0
         for epoch in range(self.epochs):
             # Initialize epoch-level accumulators as floats
-            epoch_policy_loss = epoch_value_loss = epoch_entropy = epoch_total_loss = 0.0
+            epoch_policy_loss = epoch_value_loss = epoch_entropy = epoch_total_loss = (
+                0.0
+            )
             epoch_clip_count = 0.0
             epoch_kl_sum = 0.0
             for batch_idxs in batches:
