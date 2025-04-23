@@ -1,16 +1,23 @@
 #! /bin/bash
 
-#SBATCH --job-name="HighwayPPO"
-#SBATCH --partition=GPU
-#SBATCH --nodes=1
-#SBATCH --ntasks-per-node=1
-#SBATCH --time=024:00:00
-#SBATCH --gres=gpu:L40S:1
-#SBATCH --cpus-per-task=32
-
-module load cuda/12.4
-module load cudnn/9.0.0-cuda12
-
+source cluster-setup.sh
 cd "$SLURM_SUBMIT_DIR"
 
-uv run main.py
+NUM_WORKERS_PER_NODE=32
+GPUS_PER_NODE=4
+# Maximum SLURM array tasks running concurrently
+MAX_CONCURRENT_TASKS=10
+# Compute total experiments and number of batches/tasks
+TOTAL_EXPTS=$(uv run main.py --get-total-experiments | tail -n1)
+NUM_ARRAY_TASKS=$(( (TOTAL_EXPTS + NUM_WORKERS_PER_NODE - 1) / NUM_WORKERS_PER_NODE ))
+echo "Total experiments: $TOTAL_EXPTS, Array tasks: $NUM_ARRAY_TASKS"
+
+uv run main.py --generate-slurm \
+    --slurm-gpus $GPUS_PER_NODE \
+    --slurm-cpus $NUM_WORKERS_PER_NODE \
+    --slurm-mem 128G \
+    --slurm-time 48:00:00 \
+    --slurm-num-tasks $NUM_ARRAY_TASKS \
+    --slurm-max-concurrent $MAX_CONCURRENT_TASKS
+
+sbatch slurm_jobs/experiments_array.slurm
