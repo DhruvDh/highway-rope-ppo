@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 
-def load_and_parse(pattern="artifacts/combined_validated_data*.csv"):
+def load_and_parse(pattern="artifacts/combined_validated_data-final-run.csv"):
     """Loads and parses the combined CSV data, extracting hyperparameters."""
     csv_files = glob.glob(pattern)
     if not csv_files:
@@ -15,22 +15,27 @@ def load_and_parse(pattern="artifacts/combined_validated_data*.csv"):
         print(f"Warning: Multiple files matched pattern '{pattern}'. Using '{path}'.")
 
     records = []
-    # --- CORRECTED REGEX ---
-    # Capture everything after 'feat=' greedily until the mandatory '_epochs=' part.
-    # This handles commas and underscores within the feature names correctly.
+    # --- UPDATED REGEX FOR FINAL RUN ---
+    # Matches names like:
+    #   shuffled_rope_lr0.0003_hidden_dim256_clip_eps0.2_entropy_coef0.005_epochs8_batch_size64_d_embed16_seed2042
     rx = re.compile(
-        r"^feat=(?P<features>.+)"
-        r"_epochs=(?P<epochs>\d+)"
-        r"_lr=(?P<lr>[0-9.eE+-]+)"
-        r"_hidden_dim=(?P<hidden_dim>\d+)"
-        r"_batch_size=(?P<batch_size>\d+)$"
+        r"^(?P<prefix>sorted|shuffled)"
+        r"(?:_(?P<pe_type>rankpe|distpe|rope))?"  # optional PE subtype
+        r"_lr(?P<lr>[0-9.eE+-]+)"
+        r"_hidden_dim(?P<hidden_dim>\d+)"
+        r"_clip_eps(?P<clip_eps>[0-9.eE+-]+)"
+        r"_entropy_coef(?P<entropy_coef>[0-9.eE+-]+)"
+        r"_epochs(?P<epochs>\d+)"
+        r"_batch_size(?P<batch_size>\d+)"
+        r"_d_embed(?P<d_embed>\d+)"
+        r"_seed(?P<seed>\d+)$"
     )
-    # --- END OF CORRECTION ---
+    # --- END UPDATED REGEX ---
 
     print(f"Loading data from: {path}")
     try:
         with open(path, "r", encoding="utf-8") as f:
-            header_line = f.readline()  # Read header line
+            f.readline()  # Read header line
 
             for line_num, line in enumerate(f, 2):
                 line = line.strip()
@@ -38,26 +43,27 @@ def load_and_parse(pattern="artifacts/combined_validated_data*.csv"):
                     continue
                 tokens = line.split(",")
 
-                landmark_token_part = "_epochs="
-                landmark_idx = next(
-                    (i for i, t in enumerate(tokens) if landmark_token_part in t), None
-                )
-
-                if landmark_idx is None or len(tokens) < landmark_idx + 4:
+                # Expected CSV layout:
+                #   0: experiment_name
+                #   1: final_reward
+                #   2: max_reward
+                #   3: training_steps
+                #   4: best_model_path
+                #   5: plot_path
+                if len(tokens) < 4:
                     print(
-                        f"Warning: Skipping line {line_num}. Could not find landmark '{landmark_token_part}' or insufficient fields after it. Line: '{line}'"
+                        f"Warning: Skipping line {line_num}. Expected ≥4 comma‑separated fields, got {len(tokens)}. Line: '{line}'"
                     )
                     continue
 
-                exp_name = ",".join(tokens[: landmark_idx + 1])
-
+                exp_name = tokens[0]
                 try:
-                    final = float(tokens[landmark_idx + 1])
-                    _max = float(tokens[landmark_idx + 2])
-                    steps = int(tokens[landmark_idx + 3])
-                except (ValueError, IndexError):
+                    final = float(tokens[1])
+                    _max = float(tokens[2])
+                    steps = int(tokens[3])
+                except ValueError:
                     print(
-                        f"Warning: Skipping line {line_num}. Error parsing numeric fields expected after landmark. Line: '{line}'"
+                        f"Warning: Skipping line {line_num}. Failed to parse numeric fields. Line: '{line}'"
                     )
                     continue
 
@@ -92,14 +98,17 @@ def load_and_parse(pattern="artifacts/combined_validated_data*.csv"):
 
     df = pd.DataFrame(records)
     try:
-        df = df.astype(
-            {
-                "epochs": "int",
-                "lr": "float",
-                "hidden_dim": "int",
-                "batch_size": "int",
-            }
-        )
+        astype_cols = {
+            "epochs": "int",
+            "lr": "float",
+            "hidden_dim": "int",
+            "batch_size": "int",
+            "clip_eps": "float",
+            "entropy_coef": "float",
+            "d_embed": "int",
+            "seed": "int",
+        }
+        df = df.astype({k: v for k, v in astype_cols.items() if k in df.columns})
     except KeyError as e:
         print(
             f"Error converting column types. Missing column: {e}. DataFrame columns: {df.columns}"
@@ -110,6 +119,15 @@ def load_and_parse(pattern="artifacts/combined_validated_data*.csv"):
         f"Successfully loaded and parsed {len(df)} records."
     )  # Now reflects records *not* skipped by regex
     return df
+
+
+def _print_group(df: pd.DataFrame, col: str, title: str) -> None:
+    """Utility to print grouped mean/std/count if column exists."""
+    print(f"\n=== By {title} (Full Dataset) ===")
+    if col in df.columns:
+        print(df.groupby(col)["final_reward"].agg(["mean", "std", "count"]).round(2))
+    else:
+        print(f"Column '{col}' not found for grouping.")
 
 
 # --- Main function remains unchanged ---
@@ -126,78 +144,27 @@ def main():
     print("\n=== Overall metrics (Full Dataset) ===")
     print(df[["final_reward", "max_reward", "training_steps"]].describe().round(2))
 
-    print("\n=== By features (Full Dataset) ===")
-    if "features" in df.columns:
-        print(
-            df.groupby("features")["final_reward"]
-            .agg(["mean", "std", "count"])
-            .round(2)
-        )
-    else:
-        print("Column 'features' not found for grouping.")
-
-    print("\n=== By learning rate (Full Dataset) ===")
-    if "lr" in df.columns:
-        print(df.groupby("lr")["final_reward"].agg(["mean", "std", "count"]).round(2))
-    else:
-        print("Column 'lr' not found for grouping.")
-
-    print("\n=== By epochs/update (Full Dataset) ===")
-    if "epochs" in df.columns:
-        print(
-            df.groupby("epochs")["final_reward"].agg(["mean", "std", "count"]).round(2)
-        )
-    else:
-        print("Column 'epochs' not found for grouping.")
-
-    print("\n=== By hidden_dim (Full Dataset) ===")
-    if "hidden_dim" in df.columns:
-        print(
-            df.groupby("hidden_dim")["final_reward"]
-            .agg(["mean", "std", "count"])
-            .round(2)
-        )
-    else:
-        print("Column 'hidden_dim' not found for grouping.")
-
-    print("\n=== By batch_size (Full Dataset) ===")
-    if "batch_size" in df.columns:
-        print(
-            df.groupby("batch_size")["final_reward"]
-            .agg(["mean", "std", "count"])
-            .round(2)
-        )
-    else:
-        print("Column 'batch_size' not found for grouping.")
+    _print_group(df, "features", "features")
+    _print_group(df, "lr", "learning rate")
+    _print_group(df, "epochs", "epochs/update")
+    _print_group(df, "hidden_dim", "hidden_dim")
+    _print_group(df, "batch_size", "batch_size")
 
     # --- New Analysis for Fixed Final Config Subset ---
     print("\n\n" + "=" * 15 + " Analysis for Fixed Final Config Subset " + "=" * 15)
 
-    fixed_features = "x,y,vx,vy"
     fixed_lr = 3e-4
     fixed_epochs = 8
 
     print("\nFiltering criteria for this subset:")
-    print(f"  - features = '{fixed_features}'")
     print(f"  - lr       = {fixed_lr}")
     print(f"  - epochs   = {fixed_epochs}")
     print(
         "(Note: clip_eps and entropy_coef are not available in the loaded data for filtering)"
     )
 
-    required_cols = ["features", "lr", "epochs"]
-    if not all(col in df.columns for col in required_cols):
-        print(
-            "\n*** Cannot perform filtering. Required columns missing from DataFrame. ***"
-        )
-        print(f"    Required: {required_cols}")
-        print(f"    Available: {list(df.columns)}")
-        return
-
     df_filtered = df[
-        (df["features"] == fixed_features)
-        & (np.isclose(df["lr"], fixed_lr))
-        & (df["epochs"] == fixed_epochs)
+        (np.isclose(df["lr"], fixed_lr)) & (df["epochs"] == fixed_epochs)
     ].copy()
 
     if df_filtered.empty:
