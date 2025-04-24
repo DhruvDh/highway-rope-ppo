@@ -33,8 +33,7 @@ class RankEmbedWrapper(ObservationWrapper):
             low=new_low, high=new_high, shape=new_shape, dtype=np.float32
         )
         self._device = torch.device("cpu")  # Default device
-        # Precompute static numpy embedding lookup to avoid repeated CPU transfers
-        self._embed_cpu = self.table.weight.data.cpu().numpy()
+        # No static embedding cache; embeddings will be computed dynamically per observation
 
     def to(self, device):
         """Moves the embedding table to the specified device."""
@@ -44,10 +43,9 @@ class RankEmbedWrapper(ObservationWrapper):
 
     def observation(self, obs):
         # obs shape (N, F) - numpy array
-        # Use precomputed static numpy embeddings and apply bounding
-        embed = np.tanh(self._embed_cpu)
-
+        # Compute embedding dynamically from the learnable table and apply bounding
+        with torch.no_grad():
+            embed = torch.tanh(self.table.weight).cpu().numpy()
         # Ensure obs is float32 before concatenation
         obs_float = obs.astype(np.float32)
-
         return np.concatenate([obs_float, embed], axis=-1).astype(np.float32)

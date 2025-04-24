@@ -10,7 +10,7 @@ class RotaryEmbedWrapper(ObservationWrapper):
     * Does **not** change the observation dimensionality.
     """
 
-    def __init__(self, env, rotate_dim=None, max_dist=100.0):
+    def __init__(self, env, rotate_dim=None, max_dist=100.0, ego_idx=0):
         super().__init__(env)
         # Get shape and validate rotate_dim
         N, F = env.observation_space.shape
@@ -20,6 +20,8 @@ class RotaryEmbedWrapper(ObservationWrapper):
                 f"rotate_dim must be even and ≤ {F}; got {self.rotate_dim}"
             )
         self.max_dist = float(max_dist)
+        # Index of ego vehicle for relative distance calculation
+        self.ego_idx = ego_idx
 
         # One inverse-frequency per 2-D pair
         pair_count = self.rotate_dim // 2
@@ -50,8 +52,12 @@ class RotaryEmbedWrapper(ObservationWrapper):
 
     def observation(self, obs: np.ndarray) -> np.ndarray:
         # obs shape: (N, F)
-        # Compute normalized distance of each vehicle and clip to [0,1]
-        dist = np.linalg.norm(obs[:, :2], axis=-1) / self.max_dist  # (N,)
+        # Compute normalized distance of each vehicle relative to ego and clip to [0,1]
+        ego_xy = obs[self.ego_idx, :2]  # (2,) position of ego
+        rel_xy = obs[:, :2] - ego_xy[None, :]  # (N,2) relative positions
+        dist = (
+            np.linalg.norm(rel_xy, axis=-1) / self.max_dist
+        )  # (N,) normalized distances
         dist = np.clip(dist, 0.0, 1.0)
         obs_f = obs.astype(np.float32)
         return self._apply_rope(obs_f, dist)

@@ -6,7 +6,7 @@ import torch
 
 class DistanceEmbedWrapper(ObservationWrapper):
     # Example using fixed sinusoidal encoding based on Euclidean distance
-    def __init__(self, env, d_embed=8, max_dist=100.0, use_euclidean=True):
+    def __init__(self, env, d_embed=8, max_dist=100.0, use_euclidean=True, ego_idx=0):
         super().__init__(env)
         if not isinstance(env.observation_space, spaces.Box):
             raise TypeError("DistanceEmbedWrapper requires Box observation space.")
@@ -24,6 +24,8 @@ class DistanceEmbedWrapper(ObservationWrapper):
             )
         self.max_dist = float(max_dist)
         self.use_euclidean = use_euclidean
+        # Index of ego vehicle for relative distance calculation
+        self.ego_idx = ego_idx
 
         # Check if features are sufficient
         required_feats = 2 if use_euclidean else 1
@@ -64,10 +66,14 @@ class DistanceEmbedWrapper(ObservationWrapper):
 
     def observation(self, obs):
         # obs shape (N, F) - numpy array
+        # Compute distance of each vehicle relative to ego and keep dims
         if self.use_euclidean:
-            dist = np.linalg.norm(obs[:, :2], axis=-1, keepdims=True)
+            ego_xy = obs[self.ego_idx, :2]  # (2,) position of ego
+            rel = obs[:, :2] - ego_xy[None, :]  # (N,2) relative positions
+            dist = np.linalg.norm(rel, axis=-1, keepdims=True)
         else:
-            dist = np.abs(obs[:, :1])
+            ego_feat = obs[self.ego_idx, :1]  # (1,) feature of ego
+            dist = np.abs(obs[:, :1] - ego_feat[None, :])  # (N,1) relative abs value
 
         # Normalize distance
         norm_dist = np.clip(dist / self.max_dist, 0.0, 1.0)
