@@ -102,6 +102,9 @@ def train_with_experiment_name(
     episode_num = 0
 
     artifacts_dir = ensure_artifacts_dir()
+    # Create a dedicated directory for model checkpoints
+    checkpoint_dir = os.path.join(artifacts_dir, "checkpoints")
+    os.makedirs(checkpoint_dir, exist_ok=True)
 
     # Initial evaluation
     logger.info(f"{exp_prefix} Performing initial evaluation...")
@@ -201,13 +204,19 @@ def train_with_experiment_name(
                     logger.info(
                         f"{exp_prefix} Environment solved in {episode_num} episodes! avg reward={avg_r:.2f}"
                     )
-                    agent.save(f"ppo_highway_solved_{experiment_name}.pth")
+                    # Save solved model checkpoint into checkpoint subdirectory
+                    solved_filename = f"ppo_highway_solved_{experiment_name}.pth"
+                    solved_path = os.path.join(checkpoint_dir, solved_filename)
+                    agent.save(solved_path)
                     solved = True
 
                 # Best model
                 if avg_r > best_avg_reward:
                     best_avg_reward = avg_r
-                    agent.save(f"ppo_highway_best_{experiment_name}.pth")
+                    # Save best model checkpoint into checkpoint subdirectory
+                    best_filename = f"ppo_highway_best_{experiment_name}.pth"
+                    best_path = os.path.join(checkpoint_dir, best_filename)
+                    agent.save(best_path)
                     logger.info(
                         f"{exp_prefix} New best model saved, avg reward={best_avg_reward:.2f}"
                     )
@@ -272,12 +281,16 @@ def train_with_experiment_name(
     # CSV summary
     csv_path = os.path.join(artifacts_dir, f"summary_{experiment_name}.csv")
     with open(csv_path, "w") as f:
+        # Write header
         f.write("experiment,final_reward,max_reward,steps,best_model,plot\n")
+        # Construct full checkpoint path in checkpoint subdirectory
+        best_model_path = os.path.join(
+            checkpoint_dir, f"ppo_highway_best_{experiment_name}.pth"
+        )
+        # Write summary line with full checkpoint path
         f.write(
             f"{experiment_name},{avg_rewards[-1]:.4f},{max(avg_rewards):.4f},{total_steps},"
-        )
-        f.write(
-            f"ppo_highway_best_{experiment_name}.pth,{os.path.basename(plot_path)}\n"
+            f"{best_model_path},{os.path.basename(plot_path)}\n"
         )
     logger.info(f"{exp_prefix} Summary CSV saved to {csv_path}")
 
