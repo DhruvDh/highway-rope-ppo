@@ -211,13 +211,96 @@ sweep_dict = {
 }
 ```
 
-Each combination of swept hyperparameters is run for multiple random seeds across the following **Experimental Conditions** (`experiments/config.py:Condition`):
+Each hyper-parameter combination is repeated over several random seeds under the five **experimental conditions** (`experiments/config.py:Condition`):
 
-- `SORTED`: Baseline, observations sorted by distance, no PE.
-- `SHUFFLED`: Baseline, observations shuffled randomly, no PE.
-- `SHUFFLED_RANKPE`: Shuffled observations + learnable Rank Positional Embedding.
-- `SHUFFLED_DISTPE`: Shuffled observations + fixed Sinusoidal Distance Positional Embedding.
-- `SHUFFLED_ROPE`: Shuffled observations + fixed Rotary Positional Embedding.
+- **`SORTED`** – baseline; rows already sorted by distance (nearest-first).  
+  *No positional embedding added.*
+
+- **`SHUFFLED`** – rows are reshuffled every timestep; identical feature set to `SORTED`.  
+  *Pure permutation-noise baseline.*
+
+- **`SHUFFLED_RANKPE`** – same shuffle as above **plus** a `d_embed`-wide **row-index tag** produced by a frozen lookup table (`tanh(Embedding[N,d])`).  
+  *Acts as a dimensionality control: adds channels but conveys no geometric information.*
+
+- **`SHUFFLED_DISTPE`** – shuffled rows **plus** a sinusoidal distance code:  
+  `sin/cos(2 π · ‖x_i − x_ego‖ / MAX_DIST · freq_k)` for each vehicle.  
+  *Injects explicit relative-distance signal.*
+
+- **`SHUFFLED_ROPE`** – shuffled rows **plus** Rotary Positional Embedding: the first `rotate_dim` features of every row are rotated in 2-D planes by an angle proportional to distance.  
+  *Mixes positional information into existing channels without widening the tensor.*
+
+## Positional-Embedding Conditions
+
+Below is a conceptual sketch of what happens to the **N × F** observation
+matrix *before* it reaches the policy for each experimental condition.
+(Variables: `obs` = current observation, `N` = rows/vehicles, `F` = base
+feature width, `d` = chosen `d_embed`, `ego` = row 0 after any shuffle.)
+
+### 1. `SORTED`  — baseline
+
+```python
+# highway-env already orders rows by nearest-first
+return obs                     # shape: (N, F)
+```
+
+### 2. `SHUFFLED`  — permutation noise
+
+```python
+obs = obs[random_permutation(N)]   # shuffle rows every step
+return obs                         # shape: (N, F)
+```
+
+### 3. `SHUFFLED_RANKPE`  — row-index tags (noise control)
+
+```python
+obs = obs[random_permutation(N)]           # same shuffle as above
+
+rank_vec = tanh(rank_embedding_table[N, d])  # frozen at init, never trained
+# -- table lives in the Gym wrapper, so PPO gradients do not reach it
+
+return concat(obs, rank_vec, axis=1)        # shape: (N, F + d)
+```
+
+*Purpose: adds the same number of channels as DistPE while conveying no
+distance information—tests whether "just wider input" helps.*
+
+### 4. `SHUFFLED_DISTPE`  — sinusoidal distance codes
+
+```python
+obs = obs[random_permutation(N)]
+
+dist = l2_norm(obs[:, :2] - obs[ego, :2])      # metres
+norm = clip(dist / MAX_DIST, 0, 1)             # ∈ [0,1]
+
+freqs = exp(-arange(0, d, 2) * ln(MAX_DIST)/d) # one freq per sin/cos pair
+angle = 2π * norm[:, None] * freqs[None, :]    # radians
+
+sincos = concat(sin(angle), cos(angle), axis=1)
+return concat(obs, sincos, axis=1)             # shape: (N, F + d)
+```
+
+### 5. `SHUFFLED_ROPE`  — rotary positional embedding
+
+```python
+obs = obs[random_permutation(N)]
+
+dist = l2_norm(obs[:, :2] - obs[ego, :2])      # metres
+norm = clip(dist / MAX_DIST, 0, 1)
+
+pair_count = rotate_dim // 2
+inv_freq = 1 / MAX_DIST ** (arange(pair_count)/pair_count)
+theta = 2π * norm[:, None] * inv_freq[None, :] # (N, pair_count)
+
+obs[:, :rotate_dim] = rope_rotate(obs[:, :rotate_dim], theta)
+return obs                                      # shape: (N, F)  (unchanged)
+```
+
+**Quick takeaway**
+
+- RankPE adds dimensionality but no useful signal → acts as a noise control.  
+- DistPE injects an explicit geometric signal (distance to ego).  
+- RoPE mixes distance into the first features by rotation, keeping width fixed.  
+- In our 15-vehicle runs, none of the embeddings surpassed the plain shuffled baseline.
 
 ## Final Run Summary (N = 15)
 
@@ -318,22 +401,22 @@ batch_size
 ### Key observations
 
 - **Ordering penalty is small.**  
-  Training with completely shuffled observations (no positional embedding) scored only ~2 points below the distance‑sorted baseline and reached the 120‑reward mark in roughly the same number of episodes.
+  Training with completely shuffled observations (no positional embedding) scored only ~2 points below the distance‑sorted baseline and reached the 120‑reward mark in roughly the same number of episodes.
 
 - **Positional embeddings did not help — and sometimes hurt.**  
-  *RankPE* and *RoPE* slowed learning by ≈100 episodes and finished at the same median reward as the plain shuffled baseline.  
+  *RankPE* and *RoPE* slowed learning by ≈100 episodes and finished at the same median reward as the plain shuffled baseline.  
   *DistPE* was consistently the worst performer in both speed and final score.
 
 - **Model capacity dominated.**  
-  A hidden dimension of **256** delivered the best final reward across *all* conditions. Increasing to 384 or 512 hid‑dim reduced performance unless RankPE was used – and even then, the gain was marginal.
+  A hidden dimension of **256** delivered the best final reward across *all* conditions. Increasing to 384 or 512 hid‑dim reduced performance unless RankPE was used – and even then, the gain was marginal.
 
 - **Take‑away:** for \(N = 15\) vehicles our vanilla MLP appears robust to permutation noise; explicit positional signals are unnecessary.
 
 - **No recovery of the (tiny) ordering gap.**  
-  The dashed line in *delta_recovery.png* is the ~0 pt “gap” between sorted and shuffled.  All positional‑embedding bars are at or **below** zero – they add nothing, occasionally subtract.
+  The dashed line in *delta_recovery.png* is the ~0 pt "gap" between sorted and shuffled.  All positional‑embedding bars are at or **below** zero – they add nothing, occasionally subtract.
 
 - **Cumulative reward ranking mirrors speed ranking.**  
-  The AULC plot shows `sorted ≈ shuffled ≫ shuffled_rankpe > shuffled_rope ≫ shuffled_distpe`.  In other words, embeddings that slowed learning also harvested less total reward.
+  The AULC plot shows `sorted ≈ shuffled ≫ shuffled_rankpe > shuffled_rope > shuffled_distpe`.  In other words, embeddings that slowed learning also harvested less total reward.
 
 ### Next step
 
