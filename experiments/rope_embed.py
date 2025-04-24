@@ -1,4 +1,5 @@
 from gymnasium import ObservationWrapper, spaces
+from utils.defaults import max_dist as _max_dist, feature_count as _F
 import numpy as np
 
 
@@ -10,23 +11,31 @@ class RotaryEmbedWrapper(ObservationWrapper):
     * Does **not** change the observation dimensionality.
     """
 
-    def __init__(self, env, rotate_dim=None, max_dist=100.0, ego_idx=0):
+    def __init__(
+        self,
+        env,
+        rotate_dim: int | None = None,
+        max_dist: float = _max_dist(),
+        base: float | None = None,
+        ego_idx: int = 0,
+    ):
         super().__init__(env)
         # Get shape and validate rotate_dim
         N, F = env.observation_space.shape
-        self.rotate_dim = rotate_dim or F  # default = all channels
+        self.rotate_dim = rotate_dim or (_F() - (_F() % 2))
         if self.rotate_dim % 2 != 0 or self.rotate_dim > F:
             raise ValueError(
                 f"rotate_dim must be even and ≤ {F}; got {self.rotate_dim}"
             )
         self.max_dist = float(max_dist)
+        base = base or self.max_dist  # sensible physical default for distance
         # Index of ego vehicle for relative distance calculation
         self.ego_idx = ego_idx
 
         # One inverse-frequency per 2-D pair
         pair_count = self.rotate_dim // 2
         self.inv_freq = 1.0 / (
-            10000 ** (np.arange(pair_count, dtype=np.float32) / pair_count)
+            base ** (np.arange(pair_count, dtype=np.float32) / pair_count)
         )
 
         # Observation space unchanged
@@ -41,7 +50,9 @@ class RotaryEmbedWrapper(ObservationWrapper):
         N = obs.shape[0]
         # Reshape first rotate_dim channels into pairs
         pair_obs = obs[:, : self.rotate_dim].reshape(N, -1, 2)  # (N, P, 2)
-        theta = dist_norm[:, None] * self.inv_freq[None, :]  # (N, P)
+        # RoPE uses angles in radians; multiply by 2π so the slowest wave
+        # completes one full rotation when dist_norm == 1
+        theta = 2 * np.pi * dist_norm[:, None] * self.inv_freq[None, :]  # (N, P)
         sin, cos = np.sin(theta)[..., None], np.cos(theta)[..., None]
         x, y = pair_obs[..., 0:1], pair_obs[..., 1:2]
         # Apply rotation: [x', y'] = [x*cos - y*sin, x*sin + y*cos]

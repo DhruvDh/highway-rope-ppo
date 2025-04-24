@@ -3,6 +3,7 @@ from enum import Enum, auto
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List
 from itertools import product
+from copy import deepcopy
 
 
 class Condition(Enum):
@@ -61,7 +62,7 @@ def expand_condition_hps(hp: ConditionHP) -> List[ConditionHP]:
     keys, values = zip(*hp.sweep.items())
     expanded = []
     for combo in product(*values):
-        params = vars(hp).copy()
+        params = deepcopy(vars(hp))
         params.pop("sweep", None)
         for key, val in zip(keys, combo):
             params[key] = val

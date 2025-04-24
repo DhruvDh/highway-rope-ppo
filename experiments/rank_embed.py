@@ -3,10 +3,11 @@ from gymnasium import ObservationWrapper, spaces
 import numpy as np
 import torch
 import torch.nn as nn
+from utils.defaults import feature_count as _F
 
 
 class RankEmbedWrapper(ObservationWrapper):
-    def __init__(self, env, d_embed=8):
+    def __init__(self, env, d_embed: int = _F()):
         super().__init__(env)
         if not isinstance(env.observation_space, spaces.Box):
             raise TypeError("RankEmbedWrapper requires Box observation space.")
@@ -23,10 +24,10 @@ class RankEmbedWrapper(ObservationWrapper):
         # Define new observation space shape
         new_shape = (N, F + d_embed)
         new_low = np.concatenate(
-            [self.observation_space.low, -np.inf * np.ones((N, d_embed))], axis=1
+            [self.observation_space.low, -1.0 * np.ones((N, d_embed))], axis=1
         )
         new_high = np.concatenate(
-            [self.observation_space.high, np.inf * np.ones((N, d_embed))], axis=1
+            [self.observation_space.high, 1.0 * np.ones((N, d_embed))], axis=1
         )
 
         self.observation_space = spaces.Box(

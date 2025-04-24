@@ -1,12 +1,20 @@
 from gymnasium import ObservationWrapper, spaces
 import numpy as np
 from typing import Optional
+from utils.defaults import max_dist as _max_dist
 import torch
 
 
 class DistanceEmbedWrapper(ObservationWrapper):
     # Example using fixed sinusoidal encoding based on Euclidean distance
-    def __init__(self, env, d_embed=8, max_dist=100.0, use_euclidean=True, ego_idx=0):
+    def __init__(
+        self,
+        env,
+        d_embed: int = 8,
+        max_dist: float = _max_dist(),
+        use_euclidean: bool = True,
+        ego_idx: int = 0,
+    ):
         super().__init__(env)
         if not isinstance(env.observation_space, spaces.Box):
             raise TypeError("DistanceEmbedWrapper requires Box observation space.")
@@ -79,7 +87,8 @@ class DistanceEmbedWrapper(ObservationWrapper):
         norm_dist = np.clip(dist / self.max_dist, 0.0, 1.0)
 
         # Apply sinusoidal encoding
-        angles = norm_dist * self._freqs_np
+        # DistPE uses angles in radians; multiply by 2π for full cycles over normalized distance
+        angles = 2 * np.pi * norm_dist * self._freqs_np
         embed = np.concatenate([np.sin(angles), np.cos(angles)], axis=-1)
 
         obs_float = obs.astype(np.float32)

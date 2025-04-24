@@ -57,6 +57,13 @@ def make_env(
             obs_cfg.setdefault("order", "shuffled")
         # other conditions can be added here
 
+    # Early validation for SHUFFLED_ROPE d_embed
+    if exp_condition is Condition.SHUFFLED_ROPE and d_embed is not None:
+        # number of features per vehicle
+        F = len(cfg["observation"].get("features", []))
+        if d_embed % 2 != 0 or d_embed > F:
+            raise ValueError("rotate_dim (d_embed) must be even and ≤ feature count")
+
     # 4. Ensure highway-env is registered (only once per session)
     global _HIGHWAY_ENVS_REGISTERED
     if not _HIGHWAY_ENVS_REGISTERED:
@@ -65,6 +72,14 @@ def make_env(
 
     # 5. Create base environment
     env = gym.make("highway-v0", config=cfg)
+
+    # ------------------------------------------------------------------ #
+    #  Fast-fail for dimension mismatches after defaults have expanded   #
+    # ------------------------------------------------------------------ #
+    F = env.observation_space.shape[1]
+    if exp_condition is Condition.SHUFFLED_ROPE and d_embed is not None:
+        if d_embed % 2 or d_embed > F:
+            raise ValueError(f"rotate_dim / d_embed must be even and ≤ {F}")
 
     # 6. Wrap based on condition
     match exp_condition:
