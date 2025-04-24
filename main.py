@@ -52,7 +52,7 @@ def define_experiments(base_seed=SEED, num_seeds=3):
         "hidden_dim": [128, 256, 384],  # coarse MLP size check
         "clip_eps": [0.2],  # default PPO
         "entropy_coef": [0.005],  # explore lower & default
-        "epochs": [6, 8],  # pilot sweet-spot
+        "epochs": [6, 8, 10],  # pilot sweet-spot
         "batch_size": [32, 64],  # stable mid-range
         # With feature vector length 4 we can only rotate 4 channels
         "d_embed": [4],  # rotate_dim must divide 4
