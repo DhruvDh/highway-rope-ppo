@@ -219,6 +219,94 @@ Each combination of swept hyperparameters is run for multiple random seeds acros
 - `SHUFFLED_DISTPE`: Shuffled observations + fixed Sinusoidal Distance Positional Embedding.
 - `SHUFFLED_ROPE`: Shuffled observations + fixed Rotary Positional Embedding.
 
+## Final Run Summary (N = 15)
+
+```
+❯ uv run analysis.py
+Loading data from: artifacts/combined_validated_data-final-run.csv
+Successfully loaded and parsed 270 records.
+
+
+=============== Analysis on Full Midterm Dataset ===============
+
+=== Overall metrics (Full Dataset) ===
+       final_reward  max_reward  training_steps
+count        270.00      270.00          270.00
+mean         115.72      121.10       255508.16
+std           14.71       12.98        14747.18
+min           70.29       73.15       206200.00
+25%          107.84      114.14       244962.00
+50%          116.66      122.92       260896.00
+75%          127.77      130.91       268040.00
+max          141.46      144.02       275632.00
+
+=== By features (Full Dataset) ===
+Column 'features' not found for grouping.
+
+=== By learning rate (Full Dataset) ===
+          mean    std  count
+lr                          
+0.0003  115.72  14.71    270
+
+=== By epochs/update (Full Dataset) ===
+          mean    std  count
+epochs                      
+8       115.72  14.71    270
+
+=== By hidden_dim (Full Dataset) ===
+              mean    std  count
+hidden_dim                      
+256         119.33  16.39     90
+384         113.68  14.74     90
+512         114.14  12.16     90
+
+=== By batch_size (Full Dataset) ===
+              mean    std  count
+batch_size                      
+32          113.06  14.74    135
+64          118.37  14.23    135
+
+
+=============== Analysis for Fixed Final Config Subset ===============
+
+Filtering criteria for this subset:
+  - lr       = 0.0003
+  - epochs   = 8
+(Note: clip_eps and entropy_coef are not available in the loaded data for filtering)
+
+Found 270 runs matching the fixed criteria.
+
+--- Overall metrics (Filtered Subset) ---
+       final_reward  max_reward  training_steps
+count        270.00      270.00          270.00
+mean         115.72      121.10       255508.16
+std           14.71       12.98        14747.18
+min           70.29       73.15       206200.00
+25%          107.84      114.14       244962.00
+50%          116.66      122.92       260896.00
+75%          127.77      130.91       268040.00
+max          141.46      144.02       275632.00
+
+--- By hidden_dim (within Fixed Config) ---
+              mean    std  count
+hidden_dim                      
+256         119.33  16.39     90
+384         113.68  14.74     90
+512         114.14  12.16     90
+
+--- By batch_size (within Fixed Config) ---
+              mean    std  count
+batch_size                      
+32          113.06  14.74    135
+64          118.37  14.23    135
+
+--- Best Performing Run (within Fixed Config Subset) ---
+  Experiment Name: shuffled_rope_lr0.0003_hidden_dim256_clip_eps0.2_entropy_coef0.005_epochs8_batch_size64_d_embed16_seed2042
+  Final Reward:    141.46
+  Hidden Dim:      256
+  Batch Size:      64
+```
+
 ## Results (15 observed vehicles)
 
 ![Final reward boxplot](./figures/box_final_reward.png)
