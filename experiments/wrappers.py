@@ -77,8 +77,7 @@ def make_env(
                 raise ValueError("d_embed must be specified for SHUFFLED_DISTPE")
             return DistanceEmbedWrapper(env, d_embed=d_embed)
         case Condition.SHUFFLED_ROPE:
-            if d_embed is None:
-                raise ValueError("d_embed must be specified for SHUFFLED_ROPE")
-            return RotaryEmbedWrapper(env, d_embed=d_embed)
+            # d_embed kept for CLI compatibility; becomes rotate_dim
+            return RotaryEmbedWrapper(env, rotate_dim=d_embed)
         case _:
             return env

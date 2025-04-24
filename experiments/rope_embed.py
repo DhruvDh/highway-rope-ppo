@@ -3,45 +3,55 @@ import numpy as np
 
 
 class RotaryEmbedWrapper(ObservationWrapper):
-    def __init__(self, env, d_embed=8, max_dist=100.0):
+    """
+    True Rotary Positional-Embedding wrapper
+    ---------------------------------------
+    * Rotates the first `rotate_dim` features of every vehicle (x,y,…) in 2-D planes whose angles grow with normalised distance.
+    * Does **not** change the observation dimensionality.
+    """
+
+    def __init__(self, env, rotate_dim=None, max_dist=100.0):
         super().__init__(env)
-        # Ensure even embedding dimension for rotary embeddings
-        if d_embed % 2 != 0:
-            raise ValueError("d_embed must be even for RoPE")
-        self.d_embed = d_embed
-        self.max_dist = float(max_dist)
-        # Precompute inverse frequencies for rotary encoding
-        inv_freq = 1.0 / (10000 ** (np.arange(0, d_embed, 2) / d_embed))
-        self.inv_freq = inv_freq.astype(np.float32)
-
-        # Original observation space dimensions
+        # Get shape and validate rotate_dim
         N, F = env.observation_space.shape
-        # New observation space with appended rotary embeddings
-        new_low = np.concatenate(
-            [env.observation_space.low, -np.ones((N, d_embed), dtype=np.float32)],
-            axis=1,
-        )
-        new_high = np.concatenate(
-            [env.observation_space.high, np.ones((N, d_embed), dtype=np.float32)],
-            axis=1,
-        )
-        self.observation_space = spaces.Box(
-            low=new_low, high=new_high, dtype=np.float32
+        self.rotate_dim = rotate_dim or F  # default = all channels
+        if self.rotate_dim % 2 != 0 or self.rotate_dim > F:
+            raise ValueError(
+                f"rotate_dim must be even and ≤ {F}; got {self.rotate_dim}"
+            )
+        self.max_dist = float(max_dist)
+
+        # One inverse-frequency per 2-D pair
+        pair_count = self.rotate_dim // 2
+        self.inv_freq = 1.0 / (
+            10000 ** (np.arange(pair_count, dtype=np.float32) / pair_count)
         )
 
-    def _rope(self, dist_norm: np.ndarray) -> np.ndarray:
-        # dist_norm: shape (N,) normalized distances
-        theta = np.outer(dist_norm, self.inv_freq)  # shape (N, d_embed/2)
-        # Concatenate sin and cos components
-        return np.concatenate([np.sin(theta), np.cos(theta)], axis=1)
+        # Observation space unchanged
+        self.observation_space = env.observation_space
+
+    def _apply_rope(self, obs: np.ndarray, dist_norm: np.ndarray) -> np.ndarray:
+        """
+        Vectorised rotation of feature pairs.
+        `obs`      : (N, F) float32
+        `dist_norm`: (N,)   float32 in [0,1]
+        """
+        N = obs.shape[0]
+        # Reshape first rotate_dim channels into pairs
+        pair_obs = obs[:, : self.rotate_dim].reshape(N, -1, 2)  # (N, P, 2)
+        theta = dist_norm[:, None] * self.inv_freq[None, :]  # (N, P)
+        sin, cos = np.sin(theta)[..., None], np.cos(theta)[..., None]
+        x, y = pair_obs[..., 0:1], pair_obs[..., 1:2]
+        # Apply rotation: [x', y'] = [x*cos - y*sin, x*sin + y*cos]
+        pair_rot = np.concatenate([x * cos - y * sin, x * sin + y * cos], axis=-1)
+        out = obs.copy()
+        out[:, : self.rotate_dim] = pair_rot.reshape(N, self.rotate_dim)
+        return out
 
     def observation(self, obs: np.ndarray) -> np.ndarray:
         # obs shape: (N, F)
         # Compute normalized distance of each vehicle and clip to [0,1]
-        dist = np.linalg.norm(obs[:, :2], axis=-1) / self.max_dist  # shape (N,)
+        dist = np.linalg.norm(obs[:, :2], axis=-1) / self.max_dist  # (N,)
         dist = np.clip(dist, 0.0, 1.0)
-        # Compute rotary positional embeddings
-        rope_embed = self._rope(dist)
-        # Concatenate and return full observation
-        obs_float = obs.astype(np.float32)
-        return np.concatenate([obs_float, rope_embed], axis=1).astype(np.float32)
+        obs_f = obs.astype(np.float32)
+        return self._apply_rope(obs_f, dist)
