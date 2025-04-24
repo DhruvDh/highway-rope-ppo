@@ -57,6 +57,12 @@ def make_env(
             obs_cfg.setdefault("order", "shuffled")
         # other conditions can be added here
 
+    # Early validation for SHUFFLED_DISTPE d_embed
+    if exp_condition is Condition.SHUFFLED_DISTPE and d_embed is not None:
+        F = len(cfg["observation"].get("features", []))
+        if d_embed % 2 != 0 or d_embed > F:
+            raise ValueError("d_embed must be even and ≤ feature count for DistPE")
+
     # Early validation for SHUFFLED_ROPE d_embed
     if exp_condition is Condition.SHUFFLED_ROPE and d_embed is not None:
         # number of features per vehicle

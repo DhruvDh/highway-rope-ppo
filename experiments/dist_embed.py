@@ -12,6 +12,7 @@ class DistanceEmbedWrapper(ObservationWrapper):
         env,
         d_embed: int = 8,
         max_dist: float = _max_dist(),
+        base: float | None = None,
         use_euclidean: bool = True,
         ego_idx: int = 0,
     ):
@@ -31,6 +32,7 @@ class DistanceEmbedWrapper(ObservationWrapper):
                 f"DistanceEmbedWrapper requires even d_embed; got {self.d_embed}"
             )
         self.max_dist = float(max_dist)
+        base = base or self.max_dist  # sensible physical default for frequency base
         self.use_euclidean = use_euclidean
         # Index of ego vehicle for relative distance calculation
         self.ego_idx = ego_idx
@@ -42,10 +44,9 @@ class DistanceEmbedWrapper(ObservationWrapper):
                 f"DistanceEmbedWrapper requires at least {required_feats} feature(s) for distance calculation (features available: {F})."
             )
 
-        # Fixed sinusoidal frequencies (no learnable parameters needed for this type)
+        # Use physical distance as base for sinusoidal frequencies
         self.freqs = torch.exp(
-            -torch.arange(0, d_embed, 2, dtype=torch.float32)
-            * (np.log(10000.0) / d_embed)
+            -torch.arange(0, d_embed, 2, dtype=torch.float32) * (np.log(base) / d_embed)
         )
         # Cache numpy version of frequencies to avoid repeated .cpu().numpy()
         self._freqs_np: np.ndarray = self.freqs.cpu().numpy()

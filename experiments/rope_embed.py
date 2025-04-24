@@ -22,7 +22,7 @@ class RotaryEmbedWrapper(ObservationWrapper):
         super().__init__(env)
         # Get shape and validate rotate_dim
         N, F = env.observation_space.shape
-        self.rotate_dim = rotate_dim or (_F() - (_F() % 2))
+        self.rotate_dim = rotate_dim or (F - (F % 2))
         if self.rotate_dim % 2 != 0 or self.rotate_dim > F:
             raise ValueError(
                 f"rotate_dim must be even and ≤ {F}; got {self.rotate_dim}"

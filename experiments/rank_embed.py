@@ -45,8 +45,7 @@ class RankEmbedWrapper(ObservationWrapper):
     def observation(self, obs):
         # obs shape (N, F) - numpy array
         # Compute embedding dynamically from the learnable table and apply bounding
-        with torch.no_grad():
-            embed = torch.tanh(self.table.weight).cpu().numpy()
+        embed = torch.tanh(self.table.weight).cpu().numpy()
         # Ensure obs is float32 before concatenation
         obs_float = obs.astype(np.float32)
         return np.concatenate([obs_float, embed], axis=-1).astype(np.float32)
